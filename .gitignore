@@ -1,0 +1,6 @@
+run/*.db
+venv
+.env
+.venv
+.vscode
+__pycache__
