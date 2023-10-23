@@ -11,8 +11,7 @@ from .models import *
 
 load_dotenv()
 
-SQLITE_DATABASE = os.getenv("ENROLLMENT_DATABASE")
-assert SQLITE_DATABASE is not None
+SQLITE_DATABASE = os.getenv("ENROLLMENT_DATABASE") or "enrollment.db"
 
 SQLITE_PRAGMA = """
 -- Permit SQLite to be concurrently safe.
