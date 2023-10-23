@@ -70,6 +70,18 @@ def fetch_row(
     return row
 
 
+def write_row(
+    db: sqlite3.Connection,
+    sql: str,
+    params: Any = None,
+):
+    try:
+        cursor = db.execute(sql, params if params is not None else ())
+        cursor.close()
+    except sqlite3.IntegrityError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
 def extract_dict(d: dict, prefix: str) -> dict:
     """
     Extracts all keys from a dictionary that start with a given prefix.

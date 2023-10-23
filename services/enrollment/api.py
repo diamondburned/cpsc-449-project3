@@ -13,7 +13,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 
 from . import database
-from .database import extract_row, get_db, fetch_rows, fetch_row
+from .database import extract_row, get_db, fetch_rows, fetch_row, write_row
 from .models import *
 from .model_requests import *
 
@@ -315,7 +315,8 @@ def create_enrollment(
     )
     if id:
         # If there is space, enroll the student.
-        db.execute(
+        write_row(
+            db,
             """
             INSERT INTO enrollments (user_id, section_id, status, grade, date)
             VALUES(:user, :section, 'Enrolled', NULL, CURRENT_TIMESTAMP)
@@ -353,7 +354,8 @@ def create_enrollment(
             waitlist_position = row["waitlist.position"]
 
             # Ensure that there's also a waitlist enrollment.
-            db.execute(
+            write_row(
+                db,
                 """
                 INSERT INTO enrollments (user_id, section_id, status, grade, date)
                 VALUES(:user, :section, 'Waitlisted', NULL, CURRENT_TIMESTAMP)
@@ -447,7 +449,7 @@ def update_section(
     v["section_id"] = section_id
 
     try:
-        db.execute(q, v)
+        write_row(db, q, v)
     except Exception as e:
         raise HTTPException(status_code=409, detail=f"Failed to update section:{e}")
 
@@ -461,7 +463,8 @@ def drop_user_enrollment(
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
 ) -> Enrollment:
-    db.execute(
+    write_row(
+        db,
         """
         UPDATE enrollments
         SET status = 'Dropped'
@@ -504,7 +507,8 @@ def drop_user_waitlist(
     position = row["waitlist.position"]
 
     # Ensure that every waitlist entry after this one has its position decremented.
-    db.execute(
+    write_row(
+        db,
         """
         UPDATE waitlist
         SET position = position - 1
@@ -516,7 +520,8 @@ def drop_user_waitlist(
     )
 
     # Delete the waitlist enrollment.
-    db.execute(
+    write_row(
+        db,
         """
         DELETE FROM enrollments
         WHERE
@@ -544,7 +549,8 @@ def delete_section(section_id: int, db: sqlite3.Connection = Depends(get_db)):
     get_section(section_id, db)
 
     # mark section as deleted
-    db.execute(
+    write_row(
+        db,
         """
         UPDATE sections
         SET deleted = TRUE
