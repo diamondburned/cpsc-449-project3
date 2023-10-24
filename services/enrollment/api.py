@@ -7,13 +7,13 @@ import time
 import sqlite3
 from typing import Optional
 
+from internal.database import extract_row, get_db, fetch_rows, fetch_row, write_row
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRoute
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 
 from . import database
-from .database import extract_row, get_db, fetch_rows, fetch_row, write_row
 from .models import *
 from .model_requests import *
 
