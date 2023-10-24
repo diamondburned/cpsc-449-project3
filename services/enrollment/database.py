@@ -12,8 +12,11 @@ from .models import *
 
 load_dotenv()
 
-SQLITE_DATABASE = os.getenv("ENROLLMENT_DATABASE") or "enrollment.db"
-set_db_path(SQLITE_DATABASE)
+ENROLLMENT_DATABASE = os.getenv("ENROLLMENT_DATABASE")
+if ENROLLMENT_DATABASE is None:
+    raise Exception("$ENROLLMENT_DATABASE is not set")
+
+set_db_path(ENROLLMENT_DATABASE)
 
 
 def list_courses(

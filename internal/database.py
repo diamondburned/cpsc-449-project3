@@ -1,7 +1,8 @@
-from typing import Any, Generator, Iterable, Type
-from fastapi import HTTPException
+import os
 import contextlib
 import sqlite3
+from typing import Any, Generator, Iterable, Type
+from fastapi import HTTPException
 
 sqlitePath: str | None = None
 
@@ -112,3 +113,37 @@ def exclude_dict(d: dict, keys: Iterable[str]) -> dict:
     Returns a copy of a dictionary without the given keys.
     """
     return {k: v for k, v in d.items() if k not in keys}
+
+
+def init_db_cmd(schemaFile: str, testdataFile: str):
+    """
+    Executes an interactive command to initialize the database with
+    the given schema and test data.
+    """
+    assert sqlitePath is not None
+
+    schema_sql_file = open(schemaFile, "r")
+    schema_sql = schema_sql_file.read()
+
+    schema_testdata_sql_file = open(testdataFile, "r")
+    schema_testdata_sql = schema_testdata_sql_file.read()
+
+    if os.path.isfile(sqlitePath):
+        answer = input("Database file already exists. Overwrite? (y/n) ")
+        if answer.lower() == "y":
+            os.remove(sqlitePath)
+        else:
+            print("Aborting...")
+            exit(1)
+
+    conn = sqlite3.connect(sqlitePath)
+
+    c = conn.cursor()
+    c.executescript(schema_sql)
+
+    insertTestData = input("Insert test data? (y/n) ")
+    if insertTestData.lower() == "y":
+        c.executescript(schema_testdata_sql)
+
+    conn.commit()
+    conn.close()
