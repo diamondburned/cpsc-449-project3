@@ -1,4 +1,4 @@
-run/*.db
+/run
 venv
 .env
 .venv

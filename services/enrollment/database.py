@@ -6,17 +6,12 @@ from internal.database import fetch_rows, extract_row, set_db_path
 from typing import Any, Generator, Iterable, Type
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from dotenv import load_dotenv
 
 from .models import *
 
-load_dotenv()
 
-ENROLLMENT_DATABASE = os.getenv("ENROLLMENT_DATABASE")
-if ENROLLMENT_DATABASE is None:
-    raise Exception("$ENROLLMENT_DATABASE is not set")
-
-set_db_path(ENROLLMENT_DATABASE)
+db_path = "run/enrollment.db"
+set_db_path(db_path)
 
 
 def list_courses(

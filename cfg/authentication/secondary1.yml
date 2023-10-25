@@ -1,0 +1,11 @@
+fuse:
+  dir: "run/authentication/secondary1/fuse"
+data:
+  dir: "run/authentication/secondary1/data"
+  compress: true
+http:
+  addr: ":20203"
+lease:
+  type: "static"
+  advertise-url: "http://$HOSTNAME:20202"
+  candidate: false

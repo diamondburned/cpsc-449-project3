@@ -4,12 +4,12 @@ import sqlite3
 from typing import Any, Generator, Iterable, Type
 from fastapi import HTTPException
 
-sqlitePath: str | None = None
+sqlite_path: str | None = None
 
 
 def set_db_path(path: str):
-    global sqlitePath
-    sqlitePath = path
+    global sqlite_path
+    sqlite_path = path
 
 
 sqlitePragma = """
@@ -29,13 +29,16 @@ PRAGMA short_column_names = OFF;
 """
 
 
-def get_db(read_only=False) -> Generator[sqlite3.Connection, None, None]:
+def get_db(
+    db_path=sqlite_path,
+    read_only=False,
+) -> Generator[sqlite3.Connection, None, None]:
     """
     Get a new database connection.
     """
-    assert sqlitePath is not None
+    assert db_path is not None
 
-    with sqlite3.connect(sqlitePath) as db:
+    with sqlite3.connect(db_path) as db:
         db.row_factory = sqlite3.Row
 
         # These pragmas are only relevant for write operations.
@@ -51,7 +54,7 @@ def get_db(read_only=False) -> Generator[sqlite3.Connection, None, None]:
                 db.commit()
 
 
-def get_readonly_db() -> Generator[sqlite3.Connection, None, None]:
+def get_read_db() -> Generator[sqlite3.Connection, None, None]:
     """
     Get a read-only database connection.
     """
@@ -115,35 +118,42 @@ def exclude_dict(d: dict, keys: Iterable[str]) -> dict:
     return {k: v for k, v in d.items() if k not in keys}
 
 
-def init_db_cmd(schemaFile: str, testdataFile: str):
+def init_db_cmd(
+    schema_file: str,
+    testdata_file: str | None = None,
+    db_path=sqlite_path,
+):
     """
     Executes an interactive command to initialize the database with
     the given schema and test data.
     """
-    assert sqlitePath is not None
+    assert db_path is not None
 
-    schema_sql_file = open(schemaFile, "r")
+    schema_sql_file = open(schema_file, "r")
     schema_sql = schema_sql_file.read()
 
-    schema_testdata_sql_file = open(testdataFile, "r")
-    schema_testdata_sql = schema_testdata_sql_file.read()
+    schema_testdata_sql = None
+    if testdata_file is not None:
+        schema_testdata_sql_file = open(testdata_file, "r")
+        schema_testdata_sql = schema_testdata_sql_file.read()
 
-    if os.path.isfile(sqlitePath):
+    if os.path.isfile(db_path):
         answer = input("Database file already exists. Overwrite? (y/n) ")
         if answer.lower() == "y":
-            os.remove(sqlitePath)
+            os.remove(db_path)
         else:
             print("Aborting...")
             exit(1)
 
-    conn = sqlite3.connect(sqlitePath)
+    conn = sqlite3.connect(db_path)
 
     c = conn.cursor()
     c.executescript(schema_sql)
 
-    insertTestData = input("Insert test data? (y/n) ")
-    if insertTestData.lower() == "y":
-        c.executescript(schema_testdata_sql)
+    if schema_testdata_sql is not None:
+        insertTestData = input("Insert test data? (y/n) ")
+        if insertTestData.lower() == "y":
+            c.executescript(schema_testdata_sql)
 
     conn.commit()
     conn.close()
