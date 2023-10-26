@@ -25,8 +25,8 @@ First, start all the services:
 foreman start
 ```
 
-Then, initialize the database:
+Then, initialize the database and JWT:
 
 ```bash
-./init_database.sh
+./init.sh
 ```
