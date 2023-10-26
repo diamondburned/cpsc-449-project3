@@ -137,6 +137,9 @@ def init_db_cmd(
         schema_testdata_sql_file = open(testdata_file, "r")
         schema_testdata_sql = schema_testdata_sql_file.read()
 
+    db_dir = os.path.dirname(db_path)
+    os.makedirs(db_dir, exist_ok=True)
+
     if os.path.isfile(db_path):
         answer = input("Database file already exists. Overwrite? (y/n) ")
         if answer.lower() == "y":
