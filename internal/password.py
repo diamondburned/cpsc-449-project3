@@ -1,6 +1,8 @@
-# Code taken and slightly modified from
-# https://til.simonwillison.net/python/password-hashing-with-pbkdf2.
-# All credit goes to Simon Willison.
+"""
+Code taken and slightly modified from
+https://til.simonwillison.net/python/password-hashing-with-pbkdf2.
+All credit goes to Simon Willison.
+"""
 
 import base64
 import hashlib
@@ -10,7 +12,7 @@ import secrets
 ALGORITHM = "pbkdf2_sha256"
 
 
-def hash_password(password: str, salt: str | None = None, iterations=260000):
+def hash(password: str, salt: str | None = None, iterations=260000):
     if salt is None:
         salt = secrets.token_hex(16)
     assert "$" not in salt
@@ -25,7 +27,7 @@ def hash_password(password: str, salt: str | None = None, iterations=260000):
     return "{}${}${}${}".format(ALGORITHM, iterations, salt, b64_hash)
 
 
-def verify_password(password: str, password_hash: str):
+def verify(password: str, password_hash: str):
     if (password_hash or "").count("$") != 3:
         return False
 
@@ -33,5 +35,5 @@ def verify_password(password: str, password_hash: str):
     iterations = int(iterations)
     assert algorithm == ALGORITHM
 
-    compare_hash = hash_password(password, salt, iterations)
+    compare_hash = hash(password, salt, iterations)
     return secrets.compare_digest(password_hash, compare_hash)
