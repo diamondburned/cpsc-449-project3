@@ -5,6 +5,8 @@ from typing import Generator
 from dotenv import load_dotenv
 from internal.database import fetch_rows, extract_row, set_db_path
 
+from services.models import *
+
 load_dotenv()
 
 rw_paths = [
@@ -38,3 +40,13 @@ def get_db(read_only=False) -> Generator[sqlite3.Connection, None, None]:
 
 def get_read_db() -> Generator[sqlite3.Connection, None, None]:
     yield from get_db(read_only=True)
+
+
+def get_user_roles(db: sqlite3.Connection, user_id: int) -> list[Role]:
+    role_rows = fetch_rows(
+        db,
+        "SELECT role FROM user_roles WHERE user_id = ?",
+        (user_id,),
+    )
+    roles = [Role(row["user_roles.role"]) for row in role_rows]
+    return roles

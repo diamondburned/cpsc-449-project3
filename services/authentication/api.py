@@ -13,15 +13,14 @@ from internal.database import (
     fetch_row,
     write_row,
 )
-from internal.password import hash as hash_password, verify as verify_password
-from internal import jwt_claims
+from internal import jwt_claims, password
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRoute
 from fastapi import FastAPI, Depends, HTTPException
 
 from . import database
-from .database import get_db, get_read_db
+from .database import get_db, get_read_db, get_user_roles
 from services.models import *
 
 
@@ -38,10 +37,27 @@ def login(
     req: LoginRequest,
     db: sqlite3.Connection = Depends(get_read_db),
 ) -> jwt_claims.Token:
-    # TODO: read user salt and hash from database
-    # TODO: verify password
-    # TODO: generate JWT claim
-    raise NotImplementedError()
+    user_row = fetch_row(
+        db,
+        "SELECT id, passhash FROM users WHERE username = ?",
+        (req.username,),
+    )
+    if user_row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    id = extract_row(user_row, "users")["id"]
+
+    passhash = extract_row(user_row, "users")["passhash"]
+    if not password.verify(req.password, passhash):
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    roles = get_user_roles(db, id)
+
+    return jwt_claims.generate_claims(
+        username=req.username,
+        user_id=id,
+        roles=roles,
+    )
 
 
 class RegisterRequest(BaseModel):
@@ -57,7 +73,7 @@ def register(
     req: RegisterRequest,
     db: sqlite3.Connection = Depends(get_db),
 ) -> None:
-    passhash = hash_password(req.password)
+    passhash = password.hash(req.password)
     # TODO: insert into database
     raise NotImplementedError()
 
@@ -80,9 +96,7 @@ def get_user(id: int, db: sqlite3.Connection = Depends(get_read_db)) -> User:
     if user_row is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    role_rows = fetch_rows(db, "SELECT role FROM user_roles WHERE user_id = ?", (id,))
-    roles = [Role(row["user_roles.role"]) for row in role_rows]
-
+    roles = get_user_roles(db, id)
     return User(**extract_row(user_row, "users"), roles=roles)
 
 

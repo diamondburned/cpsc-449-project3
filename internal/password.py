@@ -12,7 +12,7 @@ import secrets
 ALGORITHM = "pbkdf2_sha256"
 
 
-def hash(password: str, salt: str | None = None, iterations=260000):
+def hash(password: str, salt: str | None = None, iterations=260000) -> str:
     if salt is None:
         salt = secrets.token_hex(16)
     assert "$" not in salt
@@ -27,7 +27,7 @@ def hash(password: str, salt: str | None = None, iterations=260000):
     return "{}${}${}${}".format(ALGORITHM, iterations, salt, b64_hash)
 
 
-def verify(password: str, password_hash: str):
+def verify(password: str, password_hash: str) -> bool:
     if (password_hash or "").count("$") != 3:
         return False
 

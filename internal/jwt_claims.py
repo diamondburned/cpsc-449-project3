@@ -12,6 +12,7 @@ import datetime
 from typing import Optional
 
 from pydantic import BaseModel
+from services.models import Role
 
 
 def expiration_in(minutes: int) -> tuple[datetime.datetime, datetime.datetime]:
@@ -38,7 +39,7 @@ class Token(BaseModel):
 def generate_claims(
     username: str,
     user_id: str,
-    roles: list[str],
+    roles: list[Role],
     expiry_minutes=20,
 ) -> Token:
     _, exp = expiration_in(20)
@@ -48,7 +49,7 @@ def generate_claims(
         iss="auth.local.gd",
         sub=username,
         jti=user_id,
-        roles=roles,
+        roles=[str(role) for role in roles],
         exp=int(exp.timestamp()),
     )
     token = Token(
