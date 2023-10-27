@@ -141,7 +141,7 @@ def init_db_cmd(
     os.makedirs(db_dir, exist_ok=True)
 
     if os.path.isfile(db_path):
-        answer = input("Database file already exists. Overwrite? (y/n) ")
+        answer = input("Database file already exists. Overwrite? (y/N) ")
         if answer.lower() == "y":
             os.remove(db_path)
         else:
@@ -154,7 +154,7 @@ def init_db_cmd(
     c.executescript(schema_sql)
 
     if schema_testdata_sql is not None:
-        insertTestData = input("Insert test data? (y/n) ")
+        insertTestData = input("Insert test data? (y/N) ")
         if insertTestData.lower() == "y":
             c.executescript(schema_testdata_sql)
 
