@@ -9,8 +9,6 @@ from typing import Optional
 
 from internal.database import (
     extract_row,
-    get_db,
-    get_read_db,
     fetch_rows,
     fetch_row,
     write_row,
@@ -23,6 +21,7 @@ from fastapi.routing import APIRoute
 from fastapi import FastAPI, Depends, HTTPException
 
 from . import database
+from .database import get_db, get_read_db
 from services.models import *
 
 
@@ -81,8 +80,8 @@ def get_user(id: int, db: sqlite3.Connection = Depends(get_read_db)) -> User:
     if user_row is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    role_rows = fetch_rows(db, "SELECT role FROM roles WHERE user_id = ?", (id,))
-    roles = [Role(row["roles.role"]) for row in role_rows]
+    role_rows = fetch_rows(db, "SELECT role FROM user_roles WHERE user_id = ?", (id,))
+    roles = [Role(row["user_roles.role"]) for row in role_rows]
 
     return User(**extract_row(user_row, "users"), roles=roles)
 

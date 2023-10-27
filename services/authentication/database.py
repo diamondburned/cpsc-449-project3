@@ -16,7 +16,6 @@ ro_paths = [
     "run/authentication/secondary2/fuse/auth.db",
 ]
 
-
 ro_path = 0
 rw_path = 0
 
@@ -34,8 +33,8 @@ def get_db(read_only=False) -> Generator[sqlite3.Connection, None, None]:
         rw_path = (rw_path + 1) % len(rw_paths)
         db_path = rw_paths[rw_path]
 
-    return internal.database.get_db(db_path, read_only=read_only)
+    yield from internal.database.get_db(db_path, read_only=read_only)
 
 
 def get_read_db() -> Generator[sqlite3.Connection, None, None]:
-    return get_db(read_only=True)
+    yield from get_db(read_only=True)

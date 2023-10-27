@@ -21,7 +21,9 @@ PRAGMA foreign_keys = ON;
 
 -- Enforce column types.
 PRAGMA strict = ON;
+"""
 
+sqlitePragmaRead = """
 -- Force queries to prefix column names with table names.
 -- See https://www2.sqlite.org/cvstrac/wiki?p=ColumnNames.
 PRAGMA full_column_names = ON;
@@ -40,25 +42,16 @@ def get_db(
 
     with sqlite3.connect(db_path) as db:
         db.row_factory = sqlite3.Row
+        db.executescript(sqlitePragmaRead + (sqlitePragma if not read_only else ""))
 
-        # These pragmas are only relevant for write operations.
-        cur = db.executescript(sqlitePragma)
-        cur.close()
-
-        try:
-            yield db
-        finally:
-            if read_only:
-                db.rollback()
-            else:
-                db.commit()
+        yield db
 
 
 def get_read_db() -> Generator[sqlite3.Connection, None, None]:
     """
     Get a read-only database connection.
     """
-    return get_db(read_only=True)
+    yield from get_db(read_only=True)
 
 
 def fetch_rows(
