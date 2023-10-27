@@ -74,8 +74,16 @@ def register(
     db: sqlite3.Connection = Depends(get_db),
 ) -> None:
     passhash = password.hash(req.password)
-    # TODO: insert into database
-    raise NotImplementedError()
+
+    print((req.username, passhash, req.first_name, req.last_name))
+    write_row(
+        db,
+        """
+        INSERT INTO users (username, passhash, first_name, last_name)
+        VALUES (?, ?, ?, ?)
+        """,
+        (req.username, passhash, req.first_name, req.last_name),
+    )
 
 
 class User(BaseModel):
