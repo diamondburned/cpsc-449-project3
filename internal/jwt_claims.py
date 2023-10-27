@@ -48,8 +48,8 @@ def generate_claims(
         aud="krakend.local.gd",
         iss="auth.local.gd",
         sub=username,
-        jti=user_id,
-        roles=[str(role) for role in roles],
+        jti=str(user_id),
+        roles=[role.value for role in roles],
         exp=int(exp.timestamp()),
     )
     token = Token(

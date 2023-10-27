@@ -68,22 +68,42 @@ class RegisterRequest(BaseModel):
     last_name: str
 
 
+class RegisterResponse(BaseModel):
+    id: int
+
+
 @app.post("/register")
 def register(
     req: RegisterRequest,
     db: sqlite3.Connection = Depends(get_db),
-) -> None:
+) -> RegisterResponse:
     passhash = password.hash(req.password)
 
     print((req.username, passhash, req.first_name, req.last_name))
-    write_row(
+    user_row = fetch_row(
         db,
         """
         INSERT INTO users (username, passhash, first_name, last_name)
         VALUES (?, ?, ?, ?)
+        RETURNING id
         """,
         (req.username, passhash, req.first_name, req.last_name),
     )
+
+    assert user_row is not None
+    id = extract_row(user_row, "users")["id"]
+
+    for role in req.roles:
+        write_row(
+            db,
+            """
+            INSERT INTO user_roles (user_id, role)
+            VALUES (?, ?)
+            """,
+            (id, role),
+        )
+
+    return RegisterResponse(id=id)
 
 
 class User(BaseModel):
