@@ -1,18 +1,18 @@
-INSERT INTO users VALUES
-(1, 'John', 'Doe', 'Student'),
-(2, 'Kenytt', 'Avery', 'Instructor'),
-(3, 'Jane', 'Doe', 'Registrar'),
-(4, 'Bobby', 'Muir', 'Instructor'),
-(5, 'Alice', 'Smith', 'Student'),
-(6, 'Bob', 'Jones', 'Student'),
-(7, 'Carol', 'Williams', 'Student'),
-(8, 'Dave', 'Brown', 'Student'),
-(9, 'Eve', 'Miller', 'Student'),
-(10, 'Frank', 'Davis', 'Student'),
-(11, 'Grace', 'Garcia', 'Student'),
-(12, 'Henry', 'Rodriguez', 'Student'),
-(13, 'Isabel', 'Wilson', 'Student'),
-(14, 'Jack', 'Martinez', 'Student');
+-- INSERT INTO users VALUES
+-- (1, 'John', 'Doe', 'Student'),
+-- (2, 'Kenytt', 'Avery', 'Instructor'),
+-- (3, 'Jane', 'Doe', 'Registrar'),
+-- (4, 'Bobby', 'Muir', 'Instructor'),
+-- (5, 'Alice', 'Smith', 'Student'),
+-- (6, 'Bob', 'Jones', 'Student'),
+-- (7, 'Carol', 'Williams', 'Student'),
+-- (8, 'Dave', 'Brown', 'Student'),
+-- (9, 'Eve', 'Miller', 'Student'),
+-- (10, 'Frank', 'Davis', 'Student'),
+-- (11, 'Grace', 'Garcia', 'Student'),
+-- (12, 'Henry', 'Rodriguez', 'Student'),
+-- (13, 'Isabel', 'Wilson', 'Student'),
+-- (14, 'Jack', 'Martinez', 'Student');
 
 INSERT INTO departments VALUES
 (1, 'Computer Science'),

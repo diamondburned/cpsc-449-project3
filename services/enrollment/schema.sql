@@ -1,10 +1,3 @@
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    role TEXT NOT NULL
-);
-
 CREATE TABLE departments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL
@@ -26,13 +19,13 @@ CREATE TABLE sections (
     day TEXT NOT NULL,
     begin_time TEXT NOT NULL,
     end_time TEXT NOT NULL,
-    instructor_id INTEGER NOT NULL REFERENCES users (id),
+    instructor_id INTEGER NOT NULL,
     freeze BOOLEAN NOT NULL DEFAULT FALSE,
     deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE enrollments (
-    user_id INTEGER NOT NULL REFERENCES users (id),
+    user_id INTEGER NOT NULL,
     section_id INTEGER NOT NULL REFERENCES sections (id),
     status TEXT NOT NULL,
     grade TEXT,
@@ -41,7 +34,7 @@ CREATE TABLE enrollments (
 );
 
 CREATE TABLE waitlist (
-    user_id INTEGER NOT NULL REFERENCES users (id),
+    user_id INTEGER NOT NULL,
     section_id INTEGER NOT NULL REFERENCES sections (id),
     position INTEGER NOT NULL,
     date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

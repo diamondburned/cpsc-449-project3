@@ -192,25 +192,6 @@ def list_section_waitlist(
     return [ListSectionWaitlistItem(**dict(item)) for item in waitlist]
 
 
-@app.get("/users")
-def list_users(
-    db: sqlite3.Connection = Depends(get_db),
-) -> list[User]:
-    users_rows = fetch_rows(db, "SELECT * FROM users")
-    return [User(**dict(row)) for row in users_rows]
-
-
-@app.get("/users/{user_id}")
-def get_user(
-    user_id: int,
-    db: sqlite3.Connection = Depends(get_db),
-) -> User:
-    user = fetch_row(db, "SELECT * FROM users WHERE id = ?", (user_id,))
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return User(**extract_row(user, "users"))
-
-
 @app.get("/users/{user_id}/enrollments")
 def list_user_enrollments(
     user_id: int,

@@ -1,18 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel
-
-
-class Role(str, Enum):
-    STUDENT = "Student"
-    REGISTRAR = "Registrar"
-    INSTRUCTOR = "Instructor"
-
-
-class User(BaseModel):
-    id: int
-    first_name: str
-    last_name: str
-    role: Role
+from services.models import *
 
 
 class Department(BaseModel):
@@ -37,7 +25,7 @@ class Section(BaseModel):
     begin_time: str
     end_time: str
     freeze: bool
-    instructor: User
+    instructor_id: int
 
 
 class EnrollmentStatus(str, Enum):
@@ -47,13 +35,13 @@ class EnrollmentStatus(str, Enum):
 
 
 class Enrollment(BaseModel):
-    user: User
+    user_id: int
     section: Section
     status: EnrollmentStatus
     grade: str | None
 
 
 class Waitlist(BaseModel):
-    user: User
+    user_id: int
     section: Section
     position: int

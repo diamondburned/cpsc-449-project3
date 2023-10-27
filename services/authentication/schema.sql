@@ -1,6 +1,8 @@
 CREATE TABLE users (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
+	first_name TEXT NOT NULL,
+	last_name TEXT NOT NULL,
     -- PBKDF2 hash, $ format
     -- See https://til.simonwillison.net/python/password-hashing-with-pbkdf2
     passhash TEXT NOT NULL

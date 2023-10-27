@@ -53,12 +53,10 @@ def list_sections(
         SELECT
             sections.*,
             courses.*,
-            departments.*,
-            instructors.*
+            departments.*
         FROM sections
         INNER JOIN courses ON courses.id = sections.course_id
         INNER JOIN departments ON departments.id = courses.department_id
-        INNER JOIN users AS instructors ON instructors.id = sections.instructor_id
         """
         + (
             "WHERE sections.id IN (%s)" % ",".join(["?"] * len(section_ids))
@@ -76,7 +74,7 @@ def list_sections(
                     **extract_row(row, "departments"),
                 ),
             ),
-            instructor=User(**extract_row(row, "instructors")),
+            instructor_id=row["sections.instructor_id"],
         )
         for row in rows
     ]
@@ -91,15 +89,11 @@ def list_enrollments(
             courses.*,
             sections.*,
             enrollments.*,
-            departments.*,
-            users.*,
-            instructors.*
+            departments.*
         FROM enrollments
-        INNER JOIN users ON users.id = enrollments.user_id
         INNER JOIN sections ON sections.id = enrollments.section_id
         INNER JOIN courses ON courses.id = sections.course_id
         INNER JOIN departments ON departments.id = courses.department_id
-        INNER JOIN users AS instructors ON instructors.id = sections.instructor_id
     """
     p = []
     if user_section_ids is not None:
@@ -112,7 +106,7 @@ def list_enrollments(
     return [
         Enrollment(
             **extract_row(row, "enrollments"),
-            user=User(**extract_row(row, "users")),
+            user_id=row["enrollments.user_id"],
             section=Section(
                 **extract_row(row, "sections"),
                 course=Course(
@@ -121,7 +115,7 @@ def list_enrollments(
                         **extract_row(row, "departments"),
                     ),
                 ),
-                instructor=User(**extract_row(row, "instructors")),
+                instructor_id=row["sections.instructor_id"],
             ),
         )
         for row in rows
@@ -137,15 +131,11 @@ def list_waitlist(
             waitlist.*,
             sections.*,
             courses.*,
-            departments.*,
-            users.*,
-            instructors.*
+            departments.*
         FROM waitlist
-        INNER JOIN users ON users.id = waitlist.user_id
         INNER JOIN sections ON sections.id = waitlist.section_id
         INNER JOIN courses ON courses.id = sections.course_id
         INNER JOIN departments ON departments.id = courses.department_id
-        INNER JOIN users AS instructors ON instructors.id = sections.instructor_id
     """
     p = []
     if user_section_ids is not None:
@@ -158,7 +148,7 @@ def list_waitlist(
     return [
         Waitlist(
             **extract_row(row, "waitlist"),
-            user=User(**extract_row(row, "users")),
+            user_id=row["waitlist.user_id"],
             section=Section(
                 **extract_row(row, "sections"),
                 course=Course(
@@ -167,7 +157,7 @@ def list_waitlist(
                         **extract_row(row, "departments"),
                     ),
                 ),
-                instructor=User(**extract_row(row, "instructors")),
+                instructor_id=row["sections.instructor_id"],
             ),
         )
         for row in rows
