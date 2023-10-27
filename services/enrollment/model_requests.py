@@ -36,12 +36,12 @@ class AddSectionRequest(BaseModel):
 
 
 class ListSectionEnrollmentsItem(BaseModel):
-    user: User
+    user_id: int
     grade: str | None
 
 
 class ListSectionWaitlistItem(BaseModel):
-    user: User
+    user_id: int
     position: int
 
 
