@@ -17,12 +17,12 @@ from internal.database import (
 )
 from internal.password import hash as hash_password, verify as verify_password
 from internal import jwt_claims
+from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRoute
 from fastapi import FastAPI, Depends, HTTPException
 
 from . import database
-from .models import *
 
 
 app = FastAPI()
