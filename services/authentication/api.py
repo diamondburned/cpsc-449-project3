@@ -79,7 +79,6 @@ def register(
 ) -> RegisterResponse:
     passhash = password.hash(req.password)
 
-    print((req.username, passhash, req.first_name, req.last_name))
     user_row = fetch_row(
         db,
         """
