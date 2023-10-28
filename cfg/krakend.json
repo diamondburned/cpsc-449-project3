@@ -40,6 +40,12 @@
     {
       "endpoint": "/users/{user_id}/enrollments",
       "method": "GET",
+      "input_query_strings": [
+        "status"
+      ],
+      "input_headers": [
+        "x-sub"
+      ],
       "backend": [
         {
           "url_pattern": "/users/{user_id}/enrollments",
@@ -68,7 +74,13 @@
           ],
           "full": false,
           "jwk_local_path": "run/jwt/public.json",
-          "disable_jwk_security": true
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            [
+              "sub",
+              "x-sub"
+            ]
+          ]
         }
       }
     },

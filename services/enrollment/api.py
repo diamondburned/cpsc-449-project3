@@ -10,7 +10,7 @@ from typing import Optional
 from internal.database import extract_row, get_db, fetch_rows, fetch_row, write_row
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRoute
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header
 from pydantic import BaseModel
 
 from . import database
@@ -205,7 +205,11 @@ def list_user_enrollments(
     user_id: int,
     status=EnrollmentStatus.ENROLLED,
     db: sqlite3.Connection = Depends(get_db),
+    x_sub: int = Header(),
 ) -> ListUserEnrollmentsResponse:
+    if x_sub != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     rows = fetch_rows(
         db,
         """
