@@ -6,5 +6,31 @@
       "return_error_msg": true
     }
   },
-  "endpoints": []
+  "endpoints": [
+    {
+      "endpoint": "/login",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/login",
+          "host": [
+            "http://127.0.0.1:5200"
+          ]
+        }
+      ],
+      "extra_config": {
+        "auth/signer": {
+          "alg": "RS256",
+          "kid": "project-2-group-4-kid-01",
+          "keys_to_sign": [
+            "access_token",
+            "refresh_token"
+          ],
+          "full": false,
+          "jwk_local_path": "run/jwt/private.json",
+          "disable_jwk_security": true
+        }
+      }
+    }
+  ]
 }
