@@ -19,7 +19,17 @@ pip install -r requirements.txt
 
 ## Usage
 
-First, start all the services:
+First, if you're not already in the Nix shell, you will need to install Krakend
+and LiteFS:
+
+```bash
+./install_deps.sh
+```
+
+This will install Krakend and LiteFS into the `run` directory, which is
+specifically an ephemeral directory for this project.
+
+Then, start all the services:
 
 ```bash
 foreman start
