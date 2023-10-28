@@ -3,6 +3,18 @@ from pydantic import BaseModel
 from .models import *
 
 
+class ListCoursesResponse(BaseModel):
+    courses: list[Course]
+
+
+class GetCourseWaitlistResponse(BaseModel):
+    waitlist: list[Waitlist]
+
+
+class ListSectionsResponse(BaseModel):
+    sections: list[Section]
+
+
 class ListUserSectionsType(str, Enum):
     ALL = "all"
     ENROLLED = "enrolled"
@@ -40,9 +52,29 @@ class ListSectionEnrollmentsItem(BaseModel):
     grade: str | None
 
 
+class ListSectionEnrollmentsResponse(BaseModel):
+    enrollments: list[ListSectionEnrollmentsItem]
+
+
 class ListSectionWaitlistItem(BaseModel):
     user_id: int
     position: int
+
+
+class ListSectionWaitlistResponse(BaseModel):
+    waitlist: list[ListSectionWaitlistItem]
+
+
+class ListUserEnrollmentsResponse(BaseModel):
+    enrollments: list[Enrollment]
+
+
+class ListUserSectionsResponse(BaseModel):
+    sections: list[Section]
+
+
+class ListUserWaitlistResponse(BaseModel):
+    waitlist: list[Waitlist]
 
 
 class UpdateSectionRequest(BaseModel):

@@ -75,8 +75,8 @@ app = FastAPI()
 @app.get("/courses")
 def list_courses(
     db: sqlite3.Connection = Depends(get_db),
-) -> list[Course]:
-    return database.list_courses(db)
+) -> ListCoursesResponse:
+    return ListCoursesResponse(courses=database.list_courses(db))
 
 
 @app.get("/courses/{course_id}")
@@ -94,7 +94,7 @@ def get_course(
 def get_course_waitlist(
     course_id: int,
     db: sqlite3.Connection = Depends(get_db),
-) -> list[Waitlist]:
+) -> GetCourseWaitlistResponse:
     rows = fetch_rows(
         db,
         """
@@ -105,9 +105,11 @@ def get_course_waitlist(
         """,
         (course_id,),
     )
-    return database.list_waitlist(
-        db,
-        [(row["waitlist.user_id"], row["sections.id"]) for row in rows],
+    return GetCourseWaitlistResponse(
+        waitlist=database.list_waitlist(
+            db,
+            [(row["waitlist.user_id"], row["sections.id"]) for row in rows],
+        )
     )
 
 
@@ -115,7 +117,7 @@ def get_course_waitlist(
 def list_sections(
     course_id: Optional[int] = None,
     db: sqlite3.Connection = Depends(get_db),
-) -> list[Section]:
+) -> ListSectionsResponse:
     section_ids = fetch_rows(
         db,
         """
@@ -126,7 +128,9 @@ def list_sections(
         + ("" if course_id is None else "AND course_id = :course_id"),
         {"course_id": course_id},
     )
-    return database.list_sections(db, [row["sections.id"] for row in section_ids])
+    return ListSectionsResponse(
+        sections=database.list_sections(db, [row["sections.id"] for row in section_ids])
+    )
 
 
 @app.get("/sections/{section_id}")
@@ -145,7 +149,7 @@ def list_section_enrollments(
     section_id: int,
     status=EnrollmentStatus.ENROLLED,
     db: sqlite3.Connection = Depends(get_db),
-) -> list[ListSectionEnrollmentsItem]:
+) -> ListSectionEnrollmentsResponse:
     rows = fetch_rows(
         db,
         """
@@ -164,16 +168,18 @@ def list_section_enrollments(
         db,
         [(row["user_id"], row["section_id"]) for row in rows],
     )
-    return [
-        ListSectionEnrollmentsItem(**dict(enrollment)) for enrollment in enrollments
-    ]
+    return ListSectionEnrollmentsResponse(
+        enrollments=[
+            ListSectionEnrollmentsItem(**dict(enrollment)) for enrollment in enrollments
+        ]
+    )
 
 
 @app.get("/sections/{section_id}/waitlist")
 def list_section_waitlist(
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
-) -> list[ListSectionWaitlistItem]:
+) -> ListSectionWaitlistResponse:
     rows = fetch_rows(
         db,
         """
@@ -189,7 +195,9 @@ def list_section_waitlist(
         db,
         [(row["user_id"], row["section_id"]) for row in rows],
     )
-    return [ListSectionWaitlistItem(**dict(item)) for item in waitlist]
+    return ListSectionWaitlistResponse(
+        waitlist=[ListSectionWaitlistItem(**dict(item)) for item in waitlist]
+    )
 
 
 @app.get("/users/{user_id}/enrollments")
@@ -197,7 +205,7 @@ def list_user_enrollments(
     user_id: int,
     status=EnrollmentStatus.ENROLLED,
     db: sqlite3.Connection = Depends(get_db),
-) -> list[Enrollment]:
+) -> ListUserEnrollmentsResponse:
     rows = fetch_rows(
         db,
         """
@@ -212,9 +220,11 @@ def list_user_enrollments(
         (status, user_id),
     )
     rows = [extract_row(row, "enrollments") for row in rows]
-    return database.list_enrollments(
-        db,
-        [(row["user_id"], row["section_id"]) for row in rows],
+    return ListUserEnrollmentsResponse(
+        enrollments=database.list_enrollments(
+            db,
+            [(row["user_id"], row["section_id"]) for row in rows],
+        )
     )
 
 
@@ -223,7 +233,7 @@ def list_user_sections(
     user_id: int,
     type: ListUserSectionsType = ListUserSectionsType.ALL,
     db: sqlite3.Connection = Depends(get_db),
-) -> list[Section]:
+) -> ListUserSectionsResponse:
     q = """
         SELECT sections.id
         FROM sections
@@ -241,14 +251,16 @@ def list_user_sections(
     q += ")"
 
     rows = fetch_rows(db, q, {"user_id": user_id})
-    return database.list_sections(db, [row["sections.id"] for row in rows])
+    return ListUserSectionsResponse(
+        sections=database.list_sections(db, [row["sections.id"] for row in rows])
+    )
 
 
 @app.get("/users/{user_id}/waitlist")
 def list_user_waitlist(
     user_id: int,
     db: sqlite3.Connection = Depends(get_db),
-) -> list[Waitlist]:
+) -> ListUserWaitlistResponse:
     section_ids = fetch_rows(
         db,
         """
@@ -262,9 +274,11 @@ def list_user_waitlist(
         {"user_id": user_id},
     )
     rows = [extract_row(row, "waitlist") for row in section_ids]
-    return database.list_waitlist(
-        db,
-        [(row["user_id"], row["section_id"]) for row in rows],
+    return ListUserWaitlistResponse(
+        waitlist=database.list_waitlist(
+            db,
+            [(row["user_id"], row["section_id"]) for row in rows],
+        )
     )
 
 

@@ -38,6 +38,41 @@
       }
     },
     {
+      "endpoint": "/users/{user_id}/enrollments",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/users/{user_id}/enrollments",
+          "host": [
+            "http://127.0.0.1:5100"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "kid": "project-2-group-4-kid-01",
+          "keys_to_sign": [
+            "access_token",
+            "refresh_token"
+          ],
+          "roles_key": "roles",
+          "roles": [
+            "Student",
+            "Registrar"
+          ],
+          "full": false,
+          "jwk_local_path": "run/jwt/public.json",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
       "endpoint": "/sections/{section_id}",
       "method": "DELETE",
       "backend": [
@@ -48,8 +83,7 @@
           ],
           "extra_config": {
             "backend/http": {
-              "return_error_code": true,
-              "return_error_detail": true
+              "return_error_code": true
             }
           }
         }
