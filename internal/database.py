@@ -31,10 +31,7 @@ PRAGMA short_column_names = OFF;
 """
 
 
-def get_db(
-    db_path: str | None = None,
-    read_only=False,
-) -> Generator[sqlite3.Connection, None, None]:
+def get_db(db_path: str | None = None) -> Generator[sqlite3.Connection, None, None]:
     """
     Get a new database connection.
     """
@@ -44,16 +41,26 @@ def get_db(
 
     with sqlite3.connect(db_path) as db:
         db.row_factory = sqlite3.Row
-        db.executescript(sqlitePragmaRead + (sqlitePragma if not read_only else ""))
+        db.executescript(sqlitePragmaRead + sqlitePragma)
 
         yield db
 
 
-def get_read_db() -> Generator[sqlite3.Connection, None, None]:
+def get_read_db(
+    db_path: str | None = None,
+) -> Generator[sqlite3.Connection, None, None]:
     """
     Get a read-only database connection.
     """
-    yield from get_db(read_only=True)
+    if db_path is None:
+        db_path = sqlite_path
+        assert db_path is not None
+
+    with sqlite3.connect(db_path) as db:
+        db.row_factory = sqlite3.Row
+        db.executescript(sqlitePragmaRead)
+
+        yield db
 
 
 def fetch_rows(
