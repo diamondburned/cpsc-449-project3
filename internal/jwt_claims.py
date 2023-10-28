@@ -27,6 +27,7 @@ class Claim(BaseModel):
     sub: str
     jti: str
     exp: int
+    name: str
     roles: Optional[list[str]]
 
 
@@ -47,8 +48,9 @@ def generate_claims(
     claims = Claim(
         aud="krakend.local.gd",
         iss="auth.local.gd",
-        sub=username,
-        jti=str(user_id),
+        jti=generate_jti(),
+        sub=str(user_id),
+        name=username,
         roles=[role.value for role in roles],
         exp=int(exp.timestamp()),
     )
@@ -59,3 +61,7 @@ def generate_claims(
     )
 
     return token
+
+
+def generate_jti() -> str:
+    return os.urandom(16).hex()
