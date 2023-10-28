@@ -74,7 +74,6 @@ def list_sections(
                     **extract_row(row, "departments"),
                 ),
             ),
-            instructor_id=row["sections.instructor_id"],
         )
         for row in rows
     ]
@@ -115,7 +114,6 @@ def list_enrollments(
                         **extract_row(row, "departments"),
                     ),
                 ),
-                instructor_id=row["sections.instructor_id"],
             ),
         )
         for row in rows
@@ -157,7 +155,6 @@ def list_waitlist(
                         **extract_row(row, "departments"),
                     ),
                 ),
-                instructor_id=row["sections.instructor_id"],
             ),
         )
         for row in rows
