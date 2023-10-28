@@ -37,7 +37,7 @@ def get_read_db() -> Generator[sqlite3.Connection, None, None]:
     ro_path = (ro_path + 1) % len(ro_paths)
     db_path = ro_paths[ro_path]
 
-    yield from internal.database.get_db(db_path)
+    yield from internal.database.get_read_db(db_path)
 
 
 def get_user_roles(db: sqlite3.Connection, user_id: int) -> list[Role]:
