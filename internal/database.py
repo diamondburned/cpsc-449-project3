@@ -32,13 +32,15 @@ PRAGMA short_column_names = OFF;
 
 
 def get_db(
-    db_path=sqlite_path,
+    db_path: str | None = None,
     read_only=False,
 ) -> Generator[sqlite3.Connection, None, None]:
     """
     Get a new database connection.
     """
-    assert db_path is not None
+    if db_path is None:
+        db_path = sqlite_path
+        assert db_path is not None
 
     with sqlite3.connect(db_path) as db:
         db.row_factory = sqlite3.Row
