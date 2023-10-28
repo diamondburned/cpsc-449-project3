@@ -15,7 +15,12 @@
           "url_pattern": "/login",
           "host": [
             "http://127.0.0.1:5200"
-          ]
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
         }
       ],
       "extra_config": {
@@ -28,6 +33,41 @@
           ],
           "full": false,
           "jwk_local_path": "run/jwt/private.json",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/sections/{section_id}",
+      "method": "DELETE",
+      "backend": [
+        {
+          "url_pattern": "/sections/{section_id}",
+          "host": [
+            "http://127.0.0.1:5100"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true,
+              "return_error_detail": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "kid": "project-2-group-4-kid-01",
+          "keys_to_sign": [
+            "access_token",
+            "refresh_token"
+          ],
+          "roles_key": "roles",
+          "roles": [
+            "Registrar"
+          ],
+          "full": false,
+          "jwk_local_path": "run/jwt/public.json",
           "disable_jwk_security": true
         }
       }
