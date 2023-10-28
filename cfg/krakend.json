@@ -44,7 +44,8 @@
         "status"
       ],
       "input_headers": [
-        "x-sub"
+        "x-user",
+        "x-roles"
       ],
       "backend": [
         {
@@ -78,7 +79,11 @@
           "propagate_claims": [
             [
               "sub",
-              "x-sub"
+              "x-user"
+            ],
+            [
+              "roles",
+              "x-roles"
             ]
           ]
         }

@@ -9,7 +9,8 @@ import os
 import sys
 import json
 import datetime
-from typing import Optional
+from typing import Generator, Optional
+from fastapi import Header
 
 from pydantic import BaseModel
 from services.models import Role
@@ -65,3 +66,21 @@ def generate_claims(
 
 def generate_jti() -> str:
     return os.urandom(16).hex()
+
+
+def require_x_roles(x_roles: str = Header()) -> Generator[list[Role], None, None]:
+    """
+    This requires krakend to be configured properly.
+    See $endpoint.extra_config.auth/validator.propagate_claims in krakend.json
+    """
+    roles = x_roles.split(",")
+    roles = [Role(role) for role in roles]
+    yield roles
+
+
+def require_x_user(x_user: int = Header()) -> Generator[int, None, None]:
+    """
+    This requires krakend to be configured properly.
+    See $endpoint.extra_config.auth/validator.propagate_claims in krakend.json
+    """
+    yield x_user
