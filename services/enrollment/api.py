@@ -210,8 +210,7 @@ def list_user_enrollments(
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> ListUserEnrollmentsResponse:
-    print("user", jwt_user, "roles", jwt_roles)
-    if jwt_user != user_id:
+    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     rows = fetch_rows(
@@ -295,7 +294,12 @@ def create_enrollment(
     user_id: int,
     enrollment: CreateEnrollmentRequest,
     db: sqlite3.Connection = Depends(get_db),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> CreateEnrollmentResponse:
+    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     d = {
         "user": user_id,
         "section": enrollment.section,
@@ -488,7 +492,12 @@ def drop_user_waitlist(
     user_id: int,
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
 ):
+    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     # Delete the entry from the waitlist, storing the position.
     row = fetch_row(
         db,
@@ -541,7 +550,27 @@ def drop_section_enrollment(
     section_id: int,
     user_id: int,
     db: sqlite3.Connection = Depends(get_db),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> Enrollment:
+    # Ensure the user is instructing the section or is a registrar.
+    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+        row = fetch_row(
+            db,
+            """
+            SELECT instructor_id FROM sections
+            WHERE id = :section_id
+            """,
+            {"section_id": section_id},
+        )
+        if row is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Section not found.",
+            )
+        if row["sections.instructor_id"] != jwt_user:
+            raise HTTPException(status_code=403, detail="Not authorized")
+
     # No auth so these two methods behave virtually identically.
     return drop_user_enrollment(user_id, section_id, db)
 
