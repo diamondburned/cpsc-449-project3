@@ -8,6 +8,23 @@
   },
   "endpoints": [
     {
+      "endpoint": "/register",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/register",
+          "host": [
+            "http://127.0.0.1:5200"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    },
+    {
       "endpoint": "/login",
       "method": "POST",
       "backend": [
