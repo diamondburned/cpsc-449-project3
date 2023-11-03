@@ -85,11 +85,6 @@
             "access_token",
             "refresh_token"
           ],
-          "roles_key": "roles",
-          "roles": [
-            "Student",
-            "Registrar"
-          ],
           "full": false,
           "jwk_local_path": "run/jwt/public.json",
           "disable_jwk_security": true,
@@ -133,11 +128,6 @@
           "keys_to_sign": [
             "access_token",
             "refresh_token"
-          ],
-          "roles_key": "roles",
-          "roles": [
-            "Student",
-            "Registrar"
           ],
           "full": false,
           "jwk_local_path": "run/jwt/public.json",
@@ -183,10 +173,52 @@
             "access_token",
             "refresh_token"
           ],
-          "roles_key": "roles",
-          "roles": [
-            "Student",
-            "Registrar"
+          "full": false,
+          "jwk_local_path": "run/jwt/public.json",
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            [
+              "sub",
+              "x-user"
+            ],
+            [
+              "roles",
+              "x-roles"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "endpoint": "/users/{user_id}/enrollments",
+      "method": "GET",
+      "input_query_strings": [
+        "status"
+      ],
+      "input_headers": [
+        "x-user",
+        "x-roles"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/users/{user_id}/enrollments",
+          "host": [
+            "http://127.0.0.1:5100"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "kid": "project-2-group-4-kid-01",
+          "keys_to_sign": [
+            "access_token",
+            "refresh_token"
           ],
           "full": false,
           "jwk_local_path": "run/jwt/public.json",
@@ -205,15 +237,62 @@
       }
     },
     {
-      "endpoint": "/users/{user_id}/waitlist/{section_id}",
-      "method": "DELETE",
+      "endpoint": "/users/{user_id}/waitlist",
+      "method": "GET",
       "input_headers": [
         "x-user",
         "x-roles"
       ],
       "backend": [
         {
-          "url_pattern": "/users/{user_id}/waitlist/{section_id}",
+          "url_pattern": "/users/{user_id}/waitlist",
+          "host": [
+            "http://127.0.0.1:5100"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "kid": "project-2-group-4-kid-01",
+          "keys_to_sign": [
+            "access_token",
+            "refresh_token"
+          ],
+          "full": false,
+          "jwk_local_path": "run/jwt/public.json",
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            [
+              "sub",
+              "x-user"
+            ],
+            [
+              "roles",
+              "x-roles"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "endpoint": "/sections/{section_id}/enrollments",
+      "method": "GET",
+      "input_query_strings": [
+        "status"
+      ],
+      "input_headers": [
+        "x-user",
+        "x-roles"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/sections/{section_id}/enrollments",
           "host": [
             "http://127.0.0.1:5100"
           ],
@@ -234,7 +313,7 @@
           ],
           "roles_key": "roles",
           "roles": [
-            "Student",
+            "Instructor",
             "Registrar"
           ],
           "full": false,
@@ -256,9 +335,6 @@
     {
       "endpoint": "/sections/{section_id}/enrollments/{user_id}",
       "method": "DELETE",
-      "input_query_strings": [
-        "type"
-      ],
       "input_headers": [
         "x-user",
         "x-roles"
@@ -266,6 +342,121 @@
       "backend": [
         {
           "url_pattern": "/sections/{section_id}/enrollments/{user_id}",
+          "host": [
+            "http://127.0.0.1:5100"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "kid": "project-2-group-4-kid-01",
+          "keys_to_sign": [
+            "access_token",
+            "refresh_token"
+          ],
+          "roles_key": "roles",
+          "roles": [
+            "Instructor",
+            "Registrar"
+          ],
+          "full": false,
+          "jwk_local_path": "run/jwt/public.json",
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            [
+              "sub",
+              "x-user"
+            ],
+            [
+              "roles",
+              "x-roles"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "endpoint": "/sections/{section_id}/waitlist",
+      "method": "GET",
+      "input_headers": [
+        "x-user",
+        "x-roles"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/sections/{section_id}/waitlist",
+          "host": [
+            "http://127.0.0.1:5100"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "kid": "project-2-group-4-kid-01",
+          "keys_to_sign": [
+            "access_token",
+            "refresh_token"
+          ],
+          "roles_key": "roles",
+          "roles": [
+            "Instructor",
+            "Registrar"
+          ],
+          "full": false,
+          "jwk_local_path": "run/jwt/public.json",
+          "disable_jwk_security": true,
+          "propagate_claims": [
+            [
+              "sub",
+              "x-user"
+            ],
+            [
+              "roles",
+              "x-roles"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "endpoint": "/courses",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/courses",
+          "host": [
+            "http://127.0.0.1:5100"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/courses/{section_id}/waitlist",
+      "method": "GET",
+      "input_headers": [
+        "x-user",
+        "x-roles"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/courses/{section_id}/waitlist",
           "host": [
             "http://127.0.0.1:5100"
           ],
@@ -338,6 +529,26 @@
           "disable_jwk_security": true
         }
       }
+    },
+    {
+      "endpoint": "/sections",
+      "method": "GET",
+      "input_query_strings": [
+        "course_id"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/sections",
+          "host": [
+            "http://127.0.0.1:5100"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
     },
     {
       "endpoint": "/sections",
