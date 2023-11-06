@@ -1,4 +1,4 @@
-# CPSC 449 - Project 2
+# CPSC 449 - Project 3
 
 ## Setting Up
 
