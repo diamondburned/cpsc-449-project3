@@ -88,6 +88,15 @@ install_dynamodb() {
 	echo "Installed dynamodb to run/dynamodb" >&2
 }
 
+install_python_deps() {
+	echo "Installing python dependencies..." >&2
+	pip3 install \
+		--disable-pip-version-check \
+		--no-python-version-warning \
+		-q -r requirements.txt
+	echo "Installed python dependencies" >&2
+}
+
 # is_installed $pname $installPath
 is_installed() {
 	local pname=$1
@@ -121,3 +130,4 @@ install_url() {
 install_litefs
 install_krakend
 install_dynamodb
+install_python_deps
