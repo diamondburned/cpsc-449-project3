@@ -2,11 +2,10 @@
 
 ## Usage
 
-First, if you're not already in the Nix shell, you will need to install runtime
-dependencies:
+First, you will need to install runtime dependencies:
 
 ```bash
-./install_deps.sh
+./init.sh # also works in Nix shell
 ```
 
 This will install packages into the `run` directory, which is specifically an
@@ -18,8 +17,8 @@ Then, start all the services:
 foreman start
 ```
 
-Then, initialize the database and JWT:
+Then, initialize the database:
 
 ```bash
-./init.sh
+./init_database.sh
 ```

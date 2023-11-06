@@ -32,6 +32,7 @@ pkgs.mkShell {
 		entr
 		awscli
 		jre_headless
+		redis
 	];
 
 	shellHook = ''
@@ -40,5 +41,7 @@ pkgs.mkShell {
 
 		python3 -m venv .venv
 		source .venv/bin/activate
+
+		./init.sh
 	'';
 }
