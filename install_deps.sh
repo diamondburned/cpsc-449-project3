@@ -7,6 +7,8 @@ LITEFS_VERSION=0.5.4
 KRAKEND_INSTALL_PATH=./run/bin/krakend
 KRAKEND_VERSION=2.4.3
 
+DYNAMODB_INSTALL_PATH=./run/dynamodb
+
 GOOS=linux
 GOARCH=
 	
@@ -69,6 +71,23 @@ install_krakend() {
 	echo "Installed krakend to ${KRAKEND_INSTALL_PATH}" >&2
 }
 
+install_dynamodb() {
+	if [[ -f run/dynamodb/DynamoDBLocal.jar ]]; then
+		echo "dynamodb has already been installed locally" >&2
+		return
+	fi
+
+	mkdir -p run/dynamodb
+
+	echo "Downloading dynamodb..." >&2
+	wget -q -O run/dynamodb/dynamodb_local_latest.tar.gz https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.tar.gz
+
+	tar xzf run/dynamodb/dynamodb_local_latest.tar.gz -C "$DYNAMODB_INSTALL_PATH"
+	rm run/dynamodb/dynamodb_local_latest.tar.gz
+
+	echo "Installed dynamodb to run/dynamodb" >&2
+}
+
 # is_installed $pname $installPath
 is_installed() {
 	local pname=$1
@@ -101,3 +120,4 @@ install_url() {
 
 install_litefs
 install_krakend
+install_dynamodb

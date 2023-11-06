@@ -30,6 +30,8 @@ pkgs.mkShell {
 		foreman
 		httpie
 		entr
+		awscli
+		jre_headless
 	];
 
 	shellHook = ''
