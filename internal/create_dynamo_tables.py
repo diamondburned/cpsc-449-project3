@@ -116,7 +116,7 @@ sections_table = dynamodb.create_table(
         },
         {
             'AttributeName': 'instructor',
-            'AttributeType': 'N'  # String
+            'AttributeType': 'N'  # Number
         }
     ],
     BillingMode='PAY_PER_REQUEST',  # Set to on-demand capacity mode
