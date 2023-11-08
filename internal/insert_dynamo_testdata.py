@@ -277,7 +277,7 @@ enrollment_data = [
     }
 ]
 
-# Get references to your DynamoDB tables
+# Get references to DynamoDB tables
 user_table = dynamodb.Table('User')
 department_table = dynamodb.Table('Department')
 course_table = dynamodb.Table('Course')
