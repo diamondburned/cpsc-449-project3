@@ -284,30 +284,29 @@ course_table = dynamodb.Table('Course')
 section_table = dynamodb.Table('Section')
 enrollment_table = dynamodb.Table('Enrollment')
 
-# # Insert user data into the User table
-# for item in user_data:
-#     user_table.put_item(Item=item)
-# print("User data inserted successfully.")
+# Insert user data into the User table
+for item in user_data:
+    user_table.put_item(Item=item)
+print("User data inserted successfully.")
 
-# # Insert department data into the Department table
-# for item in department_data:
-#     department_table.put_item(Item=item)
-# print("Department data inserted successfully.")
+# Insert department data into the Department table
+for item in department_data:
+    department_table.put_item(Item=item)
+print("Department data inserted successfully.")
 
-# # Insert course data into the Course table
-# for item in course_data:
-#     course_table.put_item(Item=item)
-# print("Course data inserted successfully.")
+# Insert course data into the Course table
+for item in course_data:
+    course_table.put_item(Item=item)
+print("Course data inserted successfully.")
 
 # Insert department data into the Department table
 for item in section_data:
     section_table.put_item(Item=item)
 print("Section data inserted successfully.")
 
-# # Insert enrollment data into the Enrollment table
-# for item in enrollment_data:
-#     enrollment_table.put_item(Item=item)
-# print("Enrollment data inserted successfully.")
-
+# Insert enrollment data into the Enrollment table
+for item in enrollment_data:
+    enrollment_table.put_item(Item=item)
+print("Enrollment data inserted successfully.")
 
 print("Data inserted successfully.")

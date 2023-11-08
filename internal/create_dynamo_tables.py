@@ -140,6 +140,4 @@ sections_table = dynamodb.create_table(
     ]
 )
 
-
-
 print("Tables created successfully.")
