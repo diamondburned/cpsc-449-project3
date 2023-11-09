@@ -5,4 +5,4 @@ authentication_db_primary: PATH="$PATH":run/bin litefs mount --config cfg/authen
 authentication_db_secondary1: PATH="$PATH":run/bin litefs mount --config cfg/authentication/secondary1.yml
 authentication_db_secondary2: PATH="$PATH":run/bin litefs mount --config cfg/authentication/secondary2.yml
 dynamodb: cd run && java -Djava.library.path=./dynamodb/DynamoDBLocal_lib -jar ./dynamodb/DynamoDBLocal.jar -sharedDb -port $PORT
-redis: redis-cli ping || (cd run && redis-server)
+redis: redis-cli ping && sleep infinity || (cd run && redis-server)
