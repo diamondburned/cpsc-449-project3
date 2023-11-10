@@ -19,7 +19,7 @@ class WaitlistManager:
             socket_timeout=socket_timeout
         )
 
-    def add_to_waitlist(self, user_id, section_id, position):
+    def add_to_waitlist(self, user_id, section_id, position, course_id):
         position = position + 1
 
         # Use a Redis hash to store user details
@@ -27,7 +27,8 @@ class WaitlistManager:
         user_data = {
             "section_id": section_id,
             "position": position,
-            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "course_id": course_id 
         }
 
         # Use hset to set each field individually
@@ -37,8 +38,9 @@ class WaitlistManager:
         # Use a Redis sorted set to store the waitlist with position as the score
         waitlist_key = f"waitlist:section:{section_id}"
         self.redis_conn.zadd(waitlist_key, {user_key: position})
-        return position
 
+        return position
+    
     def get_waitlist_for_section(self, section_id):
         # Retrieve the waitlist for a specific section from the sorted set
         waitlist_key = f"waitlist:section:{section_id}"
@@ -52,15 +54,35 @@ class WaitlistManager:
             section_id = int(user_data[b"section_id"])
             position = int(user_data[b"position"])
             date = user_data[b"date"].decode("utf-8")
+            course_id = int(user_data[b"course_id"])  # Retrieve course_id
             waitlist_details.append({
                 "user_id": user_id,
                 "section_id": section_id,
                 "position": position,
-                "date": date
+                "date": date,
+                "course_id": course_id  # Include course_id in the result
             })
-
         return waitlist_details
     
+    def get_waitlist_for_course(self, course_id):
+        # Retrieve waitlist details for all sections
+        waitlist_details = []
+        for key in self.redis_conn.scan_iter(match=b"user:*"):
+            user_data = self.redis_conn.hgetall(key)
+            user_id = int(key.split(b":")[1])
+
+            # Extract course_id and section_id from user_data
+            current_course_id = int(user_data.get(b'course_id', b'').decode('utf-8'))
+            current_section_id = int(user_data.get(b'section_id', b'').decode('utf-8'))
+
+            if current_course_id == course_id:
+                waitlist_details.append({
+                    "waitlist.user_id": user_id,
+                    "sections.id": current_section_id,
+                })
+
+        return waitlist_details
+
     def get_waitlist_count_for_section(self, section_id):
         # Get the number of students on the waitlist for a specific section
         waitlist_key = f"waitlist:section:{section_id}"
@@ -78,6 +100,8 @@ class WaitlistManager:
                 sections_waitlisted.add(section_id)
 
         return len(sections_waitlisted)
+    
+    
     
 
 

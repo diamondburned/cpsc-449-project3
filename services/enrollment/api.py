@@ -97,23 +97,16 @@ def get_course_waitlist(
     course_id: int,
     db: sqlite3.Connection = Depends(get_db),
 ):
-    rows = fetch_rows(
-        db,
-        """
-        SELECT waitlist.user_id, sections.id
-        FROM waitlist
-        INNER JOIN sections ON waitlist.section_id = sections.id
-        WHERE sections.course_id = ? AND sections.deleted = FALSE
-        """,
-        (course_id,),
-    )
+    
+    waitlist = WaitlistManager()
+    rows = waitlist.get_waitlist_for_course(course_id)
+    
     return GetCourseWaitlistResponse(
         waitlist=database.list_waitlist(
             db,
             [(row["waitlist.user_id"], row["sections.id"]) for row in rows],
         )
     )
-
 
 @app.get("/sections")
 def list_sections(
@@ -293,6 +286,28 @@ def list_user_waitlist(
         )
     )
 
+# @app.get("/test/{user_id}")
+# def test(
+#     user_id: int,
+#     enrollment: CreateEnrollmentRequest,
+#     db: sqlite3.Connection = Depends(get_db),
+# ):
+#     d = {
+#         "user": user_id,
+#         "section": enrollment.section,
+#     }
+        
+#     course_id = fetch_row(
+#             db,
+#             """
+#             SELECT course_id
+#             FROM sections as s
+#             WHERE s.id = :section
+#             """,
+#             d,
+#         )
+#     return {"test": course_id}
+
 @app.post("/users/{user_id}/enrollments")  # student attempt to enroll in class
 def create_enrollment(
     user_id: int,
@@ -358,7 +373,18 @@ def create_enrollment(
             d,
         )
         if id:
-            waitlist_position = waitlist.add_to_waitlist(user_id, enrollment.section, waitlist_count_for_section)
+
+            course_id = fetch_row(
+                db,
+                """
+                SELECT course_id
+                FROM sections as s
+                WHERE s.id = :section
+                """,
+                d,
+            )
+
+            waitlist_position = waitlist.add_to_waitlist(user_id, enrollment.section, waitlist_count_for_section, course_id)
 
             # Ensure that there's also a waitlist enrollment.
             write_row(
