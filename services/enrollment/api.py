@@ -96,7 +96,7 @@ def get_course(
 def get_course_waitlist(
     course_id: int,
     db: sqlite3.Connection = Depends(get_db),
-) -> GetCourseWaitlistResponse:
+):
     rows = fetch_rows(
         db,
         """
@@ -293,53 +293,16 @@ def list_user_waitlist(
         )
     )
 
-# @app.get("/test/{user_id}/enrollments")
-# def test( 
-#     user_id: int,
-#     enrollment: CreateEnrollmentRequest, 
-#     db: sqlite3.Connection = Depends(get_db)
-# ):
-        
-#         waitlist = WaitlistManager()
-
-#         d = {
-#             "user": user_id,
-#             "section": enrollment.section,
-#         }
-
-#         waitlist_count_for_section = waitlist.get_waitlist_count_for_section(enrollment.section)
-#         d['waitlist_count_for_section'] = waitlist_count_for_section
-
-#         waitlist_count_for_user = waitlist.get_waitlist_count_for_user(user_id)
-#         d['waitlist_count_for_user'] = waitlist_count_for_user
-
-#         id = fetch_row(
-#             db,
-#             """
-#             SELECT id
-#             FROM sections as s
-#             WHERE s.id = :section
-#             AND s.waitlist_capacity > :waitlist_count_for_section
-#             AND :waitlist_count_for_user < 3
-#             AND s.freeze = FALSE
-#             AND s.deleted = FALSE
-#             """,
-#             d,
-#         )
-#         print(id)
-
-#         return {"test": id}
-
 @app.post("/users/{user_id}/enrollments")  # student attempt to enroll in class
 def create_enrollment(
     user_id: int,
     enrollment: CreateEnrollmentRequest,
     db: sqlite3.Connection = Depends(get_db),
-    # jwt_user: int = Depends(require_x_user),
-    # jwt_roles: list[Role] = Depends(require_x_roles),
-):
-    # if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
+) -> CreateEnrollmentResponse:
+    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     d = {
         "user": user_id,
