@@ -18,6 +18,7 @@ from internal.jwt_claims import require_x_roles, require_x_user
 from . import database
 from .models import *
 from .model_requests import *
+from .waitlist import WaitlistManager
 
 app = FastAPI()
 
@@ -72,7 +73,6 @@ app = FastAPI()
 #      instructor only,
 #      just call /users' method though)
 #   X /sections/{section_id} (remove section, registrar only)
-
 
 @app.get("/courses")
 def list_courses(
@@ -293,17 +293,53 @@ def list_user_waitlist(
         )
     )
 
+# @app.get("/test/{user_id}/enrollments")
+# def test( 
+#     user_id: int,
+#     enrollment: CreateEnrollmentRequest, 
+#     db: sqlite3.Connection = Depends(get_db)
+# ):
+        
+#         waitlist = WaitlistManager()
+
+#         d = {
+#             "user": user_id,
+#             "section": enrollment.section,
+#         }
+
+#         waitlist_count_for_section = waitlist.get_waitlist_count_for_section(enrollment.section)
+#         d['waitlist_count_for_section'] = waitlist_count_for_section
+
+#         waitlist_count_for_user = waitlist.get_waitlist_count_for_user(user_id)
+#         d['waitlist_count_for_user'] = waitlist_count_for_user
+
+#         id = fetch_row(
+#             db,
+#             """
+#             SELECT id
+#             FROM sections as s
+#             WHERE s.id = :section
+#             AND s.waitlist_capacity > :waitlist_count_for_section
+#             AND :waitlist_count_for_user < 3
+#             AND s.freeze = FALSE
+#             AND s.deleted = FALSE
+#             """,
+#             d,
+#         )
+#         print(id)
+
+#         return {"test": id}
 
 @app.post("/users/{user_id}/enrollments")  # student attempt to enroll in class
 def create_enrollment(
     user_id: int,
     enrollment: CreateEnrollmentRequest,
     db: sqlite3.Connection = Depends(get_db),
-    jwt_user: int = Depends(require_x_user),
-    jwt_roles: list[Role] = Depends(require_x_roles),
-) -> CreateEnrollmentResponse:
-    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    # jwt_user: int = Depends(require_x_user),
+    # jwt_roles: list[Role] = Depends(require_x_roles),
+):
+    # if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+    #     raise HTTPException(status_code=403, detail="Not authorized")
 
     d = {
         "user": user_id,
@@ -336,6 +372,14 @@ def create_enrollment(
             d,
         )
     else:
+        waitlist = WaitlistManager()
+
+        waitlist_count_for_section = waitlist.get_waitlist_count_for_section(enrollment.section)
+        d['waitlist_count_for_section'] = waitlist_count_for_section
+
+        waitlist_count_for_user = waitlist.get_waitlist_count_for_user(user_id)
+        d['waitlist_count_for_user'] = waitlist_count_for_user
+
         # Otherwise, try to add them to the waitlist.
         id = fetch_row(
             db,
@@ -343,27 +387,15 @@ def create_enrollment(
             SELECT id
             FROM sections as s
             WHERE s.id = :section
-            AND s.waitlist_capacity > (SELECT COUNT(*) FROM waitlist WHERE section_id = :section)
-            AND (SELECT COUNT(*) FROM waitlist WHERE user_id = :user) < 3
+            AND s.waitlist_capacity > :waitlist_count_for_section
+            AND :waitlist_count_for_user < 3
             AND s.freeze = FALSE
             AND s.deleted = FALSE
             """,
             d,
         )
         if id:
-            row = fetch_row(
-                db,
-                """
-                INSERT INTO waitlist (user_id, section_id, position, date)
-                VALUES(:user, :section, (SELECT COUNT(*) FROM waitlist WHERE section_id = :section), CURRENT_TIMESTAMP)
-                RETURNING position
-                """,
-                d,
-            )
-
-            # Read back the waitlist position.
-            assert row
-            waitlist_position = row["waitlist.position"]
+            waitlist_position = waitlist.add_to_waitlist(user_id, enrollment.section, waitlist_count_for_section)
 
             # Ensure that there's also a waitlist enrollment.
             write_row(
