@@ -2,7 +2,7 @@ import contextlib
 import sqlite3
 import time
 import os
-from internal.database import fetch_rows, extract_row, set_db_path
+from internal.database import fetch_rows, extract_row, set_db_path, write_row
 from typing import Any, Generator, Iterable, Type
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -123,38 +123,59 @@ def list_enrollments(
 def list_waitlist(
     db: sqlite3.Connection,
     user_section_ids: list[tuple[int, int]] | None = None,
-    mapping: any = None
+    waitlist_items: any = None
 ) -> list[Waitlist]:
 
+    waitlist_query = """
+        INSERT INTO waitlist VALUES
+    """
+    for item in waitlist_items:
+        user_id = item['user_id']
+        section_id = item['section_id']
+        course_id = item['course_id']
+        position = item['position']
+        date = item['date']
+        waitlist_query += f'({user_id},{section_id},{course_id},{position},{date}),'
+
+    # Remove the last comma and add a semicolon
+    waitlist_query = waitlist_query[:-1] + ';'
+
+    # Ensure that there's also a waitlist enrollment.
+    write_row(
+        db,
+        waitlist_query
+    )
+
     q = """
-        SELECT DISTINCT
-            enrollments.*,
+        SELECT
+            waitlist.*,
             sections.*,
             courses.*,
             departments.*
-        FROM enrollments
-        INNER JOIN sections ON sections.id = enrollments.section_id
+        FROM waitlist
+        INNER JOIN sections ON sections.id = waitlist.section_id
         INNER JOIN courses ON courses.id = sections.course_id
         INNER JOIN departments ON departments.id = courses.department_id
     """
     p = []
     if user_section_ids is not None:
-        q += "WHERE (sections.course_id, sections.id) IN (%s)" % ",".join(
+        q += "WHERE (waitlist.user_id, sections.id) IN (%s)" % ",".join(
             ["(?, ?)"] * len(user_section_ids)
         )
         p = [item for sublist in user_section_ids for item in sublist]  # flatten list
 
     rows = fetch_rows(db, q, p)
 
-    print(user_section_ids)
-    for row in rows:
-        formatted_row = json.dumps(dict(row), indent=4)
-        print(formatted_row)
+    write_row(
+        db,
+        """
+        DELETE FROM waitlist
+        """
+    )
 
     return [
         Waitlist(
-            user_id=mapping[f'course:{dict(row)["sections.course_id"]}:section:{dict(row)["sections.id"]}']['user_id'],
-            position=mapping[f'course:{dict(row)["sections.course_id"]}:section:{dict(row)["sections.id"]}']['position'],
+            **extract_row(row, "waitlist"),
             section=Section(
                 **extract_row(row, "sections"),
                 course=Course(
@@ -164,5 +185,6 @@ def list_waitlist(
                     ),
                 ),
             ),
-        ) for row in rows
+        )
+        for row in rows
     ]

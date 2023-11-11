@@ -36,6 +36,7 @@ CREATE TABLE enrollments (
 CREATE TABLE waitlist (
     user_id INTEGER NOT NULL,
     section_id INTEGER NOT NULL REFERENCES sections (id),
+    course_id INTEGER NOT NULL REFERENCES courses(id),
     position INTEGER NOT NULL,
     date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, section_id)
