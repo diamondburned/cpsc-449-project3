@@ -97,9 +97,9 @@ def get_course_waitlist(
     course_id: int,
     db: sqlite3.Connection = Depends(get_db),
 ):
-    
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_row_for_course(course_id)
+    print(rows)
     
     return GetCourseWaitlistResponse(
         waitlist=database.list_waitlist(
@@ -254,15 +254,16 @@ def list_user_sections(
 def list_user_waitlist(
     user_id: int,
     db: sqlite3.Connection = Depends(get_db),
-    jwt_user: int = Depends(require_x_user),
-    jwt_roles: list[Role] = Depends(require_x_roles),
+    # jwt_user: int = Depends(require_x_user),
+    # jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> ListUserWaitlistResponse:
     
-    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    # if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+    #     raise HTTPException(status_code=403, detail="Not authorized")
 
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_rows_for_user(user_id)
+    # print(rows)
 
     return ListUserWaitlistResponse(
         waitlist=database.list_waitlist(
@@ -270,28 +271,6 @@ def list_user_waitlist(
             [(row["user_id"], row["section_id"]) for row in rows],
         )
     )
-
-# @app.get("/test/{user_id}")
-# def test(
-#     user_id: int,
-#     enrollment: CreateEnrollmentRequest,
-#     db: sqlite3.Connection = Depends(get_db),
-# ):
-#     d = {
-#         "user": user_id,
-#         "section": enrollment.section,
-#     }
-        
-#     course_id = fetch_row(
-#             db,
-#             """
-#             SELECT course_id
-#             FROM sections as s
-#             WHERE s.id = :section
-#             """,
-#             d,
-#         )
-#     return {"test": course_id}
 
 @app.post("/users/{user_id}/enrollments")  # student attempt to enroll in class
 def create_enrollment(
@@ -503,44 +482,28 @@ def drop_user_waitlist(
     user_id: int,
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
-    jwt_user: int = Depends(require_x_user),
-    jwt_roles: list[Role] = Depends(require_x_roles),
+    # jwt_user: int = Depends(require_x_user),
+    # jwt_roles: list[Role] = Depends(require_x_roles),
 ):
-    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    # if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+    #     raise HTTPException(status_code=403, detail="Not authorized
+    
+    waitlist = WaitlistManager()
 
-    # Delete the entry from the waitlist, storing the position.
-    row = fetch_row(
-        db,
-        """
-        DELETE FROM waitlist
-        WHERE
-            user_id = :user_id
-            AND section_id = :section_id
-        RETURNING position
-        """,
-        {"user_id": user_id, "section_id": section_id},
-    )
-    if row is None:
+    # Check if user is on the waitlist for a particular section
+    user_on_waitlist_for_section = waitlist.check_user_on_waitlist_for_section(user_id, section_id)
+
+    if not user_on_waitlist_for_section:
         raise HTTPException(
             status_code=400,
             detail="User is not on the waitlist.",
         )
-
-    position = row["waitlist.position"]
-
-    # Ensure that every waitlist entry after this one has its position decremented.
-    write_row(
-        db,
-        """
-        UPDATE waitlist
-        SET position = position - 1
-        WHERE
-            section_id = :section_id
-            AND position > :position
-        """,
-        {"section_id": section_id, "position": position},
-    )
+    
+    # Remove the user from the waitlist and return their position
+    position = waitlist.remove_user_from_waitlist(user_id, section_id)
+    
+    # Decrement the posistion of all the users that came after the user that was removed
+    waitlist.decrement_positions_for_others(section_id, position)
 
     # Delete the waitlist enrollment.
     write_row(

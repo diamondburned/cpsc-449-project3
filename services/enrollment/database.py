@@ -140,6 +140,7 @@ def list_waitlist(
             ["(?, ?)"] * len(user_section_ids)
         )
         p = [item for sublist in user_section_ids for item in sublist]  # flatten list
+    print(q)
 
     rows = fetch_rows(db, q, p)
     return [

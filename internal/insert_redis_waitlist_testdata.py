@@ -9,22 +9,19 @@ redis_conn = redis.Redis(
         )
 
 def add_to_waitlist(user_id, section_id, position, date, course_id):
-    # Use a Redis hash to store user details
-    user_key = f"user:{user_id}"
-    user_data = {
-        "section_id": section_id,
-        "position": position,
-        "date": date,
-        "course_id": course_id 
-    }
+        # Use a Redis hash to store user details
+        user_key = f"user:{user_id}:section:{section_id}"
+        user_data = {
+            "user_id": user_id,
+            "section_id": section_id,
+            "position": position,
+            "date": date,
+            "course_id": course_id
+        }
 
-    # Use hset to set each field individually
-    for field, value in user_data.items():
-        redis_conn.hset(user_key, field, value)
-
-    # Use a Redis sorted set to store the waitlist with position as the score
-    waitlist_key = f"waitlist:section:{section_id}"
-    redis_conn.zadd(waitlist_key, {user_key: position})
+        # Use hset to set each field individually
+        for field, value in user_data.items():
+            redis_conn.hset(user_key, field, value)
 
 # Test data
 test_data = [
