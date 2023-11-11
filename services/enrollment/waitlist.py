@@ -38,6 +38,7 @@ class WaitlistManager:
 
 
     def add_to_waitlist(self, user_id, section_id, course_id, position):
+        print(user_id, section_id, course_id, position)
         position = position + 1
 
         # Use a Redis hash to store user details
@@ -47,7 +48,7 @@ class WaitlistManager:
             "section_id": section_id,
             "course_id": course_id,
             "position": position,
-            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "date": datetime.now().strftime("%Y-%m-%d"),
         }
 
         # Use hset to set each field individually
@@ -146,6 +147,15 @@ class WaitlistManager:
             # Decrement position for users with greater position
             if int(user_position) > position:
                 self.redis_conn.hincrby(user_key, "position", -1)
+
+    def remove_all_in_section(self, section_id):
+        user_key_pattern = f"user:*:section:{section_id}"
+
+        # Iterate through all keys matching the pattern
+        for user_key in self.redis_conn.scan_iter(match=user_key_pattern):
+            # Remove the user's entry from the waitlist hash
+            self.redis_conn.delete(user_key)
+
 
         
     

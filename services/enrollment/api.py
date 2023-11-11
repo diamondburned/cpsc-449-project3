@@ -336,7 +336,7 @@ def create_enrollment(
         )
         if id:
 
-            course_id = fetch_row(
+            row = fetch_row(
                 db,
                 """
                 SELECT course_id
@@ -345,7 +345,7 @@ def create_enrollment(
                 """,
                 d,
             )
-
+            course_id = dict(row)['sections.course_id']
             waitlist_position = waitlist.add_to_waitlist(user_id, enrollment.section, course_id, waitlist_count_for_section)
 
             # Ensure that there's also a waitlist enrollment.
@@ -480,11 +480,11 @@ def drop_user_waitlist(
     user_id: int,
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
-    # jwt_user: int = Depends(require_x_user),
-    # jwt_roles: list[Role] = Depends(require_x_roles),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
 ):
-    # if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
-    #     raise HTTPException(status_code=403, detail="Not authorized
+    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
     
     waitlist = WaitlistManager()
 
@@ -498,7 +498,7 @@ def drop_user_waitlist(
         )
     
     # Remove the user from the waitlist and return their position
-    position = waitlist.remove_user_from_waitlist(user_id, section_id)
+    position = waitlist.remove_and_get_position(user_id, section_id)
     
     # Decrement the posistion of all the users that came after the user that was removed
     waitlist.decrement_positions_for_others(section_id, position)
@@ -578,17 +578,8 @@ def delete_section(section_id: int, db: sqlite3.Connection = Depends(get_db)):
         drop_user_enrollment(u[0], section_id, db)
 
     # drop waitlisted users
-    uw = fetch_rows(
-        db,
-        f"""
-        SELECT user_id FROM waitlist
-        WHERE 
-            section_id = :section_id
-        """,
-        {"section_id": section_id},
-    )
-    for u in uw:
-        drop_user_waitlist(u[0], section_id, db)
+    waitlist = WaitlistManager()
+    waitlist.remove_all_in_section(section_id)
 
 
 # https://fastapi.tiangolo.com/advanced/path-operation-advanced-configuration/#using-the-path-operation-function-name-as-the-operationid

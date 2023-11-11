@@ -126,25 +126,28 @@ def list_waitlist(
     waitlist_items: any = None
 ) -> list[Waitlist]:
 
-    waitlist_query = """
-        INSERT INTO waitlist VALUES
-    """
-    for item in waitlist_items:
-        user_id = item['user_id']
-        section_id = item['section_id']
-        course_id = item['course_id']
-        position = item['position']
-        date = item['date']
-        waitlist_query += f'({user_id},{section_id},{course_id},{position},{date}),'
+    if len(waitlist_items) != 0:
+        waitlist_query = """
+            INSERT INTO waitlist VALUES
+        """
+        for item in waitlist_items:
+            user_id = item['user_id']
+            section_id = item['section_id']
+            course_id = item['course_id']
+            position = item['position']
+            date = item['date']
+            waitlist_query += f'({user_id},{section_id},{course_id},{position},{date}),'
+        
 
-    # Remove the last comma and add a semicolon
-    waitlist_query = waitlist_query[:-1] + ';'
+        # Remove the last comma and add a semicolon
+        waitlist_query = waitlist_query[:-1] + ';'
+        print(waitlist_query)
 
-    # Ensure that there's also a waitlist enrollment.
-    write_row(
-        db,
-        waitlist_query
-    )
+        # Ensure that there's also a waitlist enrollment.
+        write_row(
+            db,
+            waitlist_query
+        )
 
     q = """
         SELECT
