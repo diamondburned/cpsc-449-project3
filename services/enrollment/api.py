@@ -99,7 +99,7 @@ def get_course_waitlist(
 ):
     
     waitlist = WaitlistManager()
-    rows = waitlist.get_waitlist_for_course(course_id)
+    rows = waitlist.get_waitlist_row_for_course(course_id)
     
     return GetCourseWaitlistResponse(
         waitlist=database.list_waitlist(
@@ -175,16 +175,10 @@ def list_section_waitlist(
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
 ) -> ListSectionWaitlistResponse:
-    rows = fetch_rows(
-        db,
-        """
-        SELECT waitlist.user_id, waitlist.section_id
-        FROM waitlist
-        INNER JOIN sections ON sections.id = waitlist.section_id
-        WHERE waitlist.section_id = ? AND sections.deleted = FALSE
-        """,
-        (section_id,),
-    )
+    
+    waitlist = WaitlistManager()
+    rows = waitlist.get_waitlist_row_for_section(section_id)
+
     rows = [extract_row(row, "waitlist") for row in rows]
     waitlist = database.list_waitlist(
         db,
@@ -263,22 +257,13 @@ def list_user_waitlist(
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> ListUserWaitlistResponse:
+    
     if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    section_ids = fetch_rows(
-        db,
-        """
-        SELECT waitlist.user_id, waitlist.section_id
-        FROM waitlist
-        INNER JOIN sections ON sections.id = waitlist.section_id
-        WHERE
-            sections.deleted = FALSE
-            AND (user_id = :user_id OR instructor_id = :user_id)
-        """,
-        {"user_id": user_id},
-    )
-    rows = [extract_row(row, "waitlist") for row in section_ids]
+    waitlist = WaitlistManager()
+    rows = waitlist.get_waitlist_rows_for_user(user_id)
+
     return ListUserWaitlistResponse(
         waitlist=database.list_waitlist(
             db,
