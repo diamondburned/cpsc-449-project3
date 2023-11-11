@@ -19,6 +19,24 @@ class WaitlistManager:
             socket_timeout=socket_timeout
         )
 
+    def extract_user_data(self, user_data):
+            # Extract user data
+            current_user_id = int(user_data.get(b'user_id', b'').decode('utf-8'))
+            current_course_id = int(user_data.get(b'course_id', b'').decode('utf-8'))
+            current_section_id = int(user_data.get(b'section_id', b'').decode('utf-8'))
+            current_position = int(user_data.get(b'position', b'').decode('utf-8'))
+            current_date = user_data.get(b'date', b'').decode('utf-8')
+
+            return {
+                "user_id": current_user_id,
+                "section_id": current_section_id,
+                "course_id": current_course_id,
+                "position": current_position,
+                "date": current_date
+            }
+
+
+
     def add_to_waitlist(self, user_id, section_id, position, course_id):
         position = position + 1
 
@@ -42,22 +60,10 @@ class WaitlistManager:
         waitlist_details = []
         for key in self.redis_conn.scan_iter():
             user_data = self.redis_conn.hgetall(key)
+            extracted_data = self.extract_user_data(user_data)
 
-            # Extract user data
-            current_user_id = int(user_data.get(b'user_id', b'').decode('utf-8'))
-            current_course_id = int(user_data.get(b'course_id', b'').decode('utf-8'))
-            current_section_id = int(user_data.get(b'section_id', b'').decode('utf-8'))
-            current_position = int(user_data.get(b'position', b'').decode('utf-8'))
-            current_date = user_data.get(b'date', b'').decode('utf-8')
-
-            if current_course_id == course_id:
-                waitlist_details.append({
-                    "user_id": current_user_id,
-                    "section_id": current_section_id,
-                    "course_id": current_course_id,
-                    "position": current_position,
-                    "date": current_date
-                })
+            if extracted_data["course_id"] == course_id:
+                waitlist_details.append(extracted_data)
 
         return waitlist_details
     
@@ -66,22 +72,10 @@ class WaitlistManager:
         waitlist_details = []
         for key in self.redis_conn.scan_iter():
             user_data = self.redis_conn.hgetall(key)
+            extracted_data = self.extract_user_data(user_data)
 
-            # Extract user data
-            current_user_id = int(user_data.get(b'user_id', b'').decode('utf-8'))
-            current_course_id = int(user_data.get(b'course_id', b'').decode('utf-8'))
-            current_section_id = int(user_data.get(b'section_id', b'').decode('utf-8'))
-            current_position = int(user_data.get(b'position', b'').decode('utf-8'))
-            current_date = user_data.get(b'date', b'').decode('utf-8')
-
-            if current_section_id == section_id:
-                waitlist_details.append({
-                    "user_id": current_user_id,
-                    "section_id": current_section_id,
-                    "course_id": current_course_id,
-                    "position": current_position,
-                    "date": current_date
-                })
+            if extracted_data["section_id"] == section_id:
+                waitlist_details.append(extracted_data)
 
         return waitlist_details
     
@@ -90,21 +84,8 @@ class WaitlistManager:
         waitlist_details = []
         for key in self.redis_conn.keys(f"user:{user_id}:*"):
             user_data = self.redis_conn.hgetall(key)
-
-            # Extract user data
-            current_user_id = int(user_data.get(b'user_id', b'').decode('utf-8'))
-            current_course_id = int(user_data.get(b'course_id', b'').decode('utf-8'))
-            current_section_id = int(user_data.get(b'section_id', b'').decode('utf-8'))
-            current_position = int(user_data.get(b'position', b'').decode('utf-8'))
-            current_date = user_data.get(b'date', b'').decode('utf-8')
-
-            waitlist_details.append({
-                "user_id": current_user_id,
-                "section_id": current_section_id,
-                "course_id": current_course_id,
-                "position": current_position,
-                "date": current_date
-            })
+            extracted_data = self.extract_user_data(user_data)
+            waitlist_details.append(extracted_data)
 
         return waitlist_details
 

@@ -99,12 +99,17 @@ def get_course_waitlist(
 ):
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_row_for_course(course_id)
-    print(rows)
+
+    mapping = {}
+    for row in rows:
+        key = f'course:{row["course_id"]}:section:{row["section_id"]}'
+        mapping[key] = row
     
     return GetCourseWaitlistResponse(
         waitlist=database.list_waitlist(
             db,
-            [(row["user_id"], row["section_id"]) for row in rows],
+            [(row["course_id"], row["section_id"]) for row in rows],
+            mapping
         )
     )
 
@@ -179,10 +184,16 @@ def list_section_waitlist(
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_row_for_section(section_id)
 
+    mapping = {}
+    for row in rows:
+        key = f'course:{row["course_id"]}:section:{row["section_id"]}'
+        mapping[key] = row
+
     return ListSectionWaitlistResponse(
         waitlist=database.list_waitlist(
             db,
-            [(row["user_id"], row["section_id"]) for row in rows],
+            [(row["course_id"], row["section_id"]) for row in rows],
+            mapping
         )
     )
 
@@ -264,7 +275,7 @@ def list_user_waitlist(
     return ListUserWaitlistResponse(
         waitlist=database.list_waitlist(
             db,
-            [(row["user_id"], row["section_id"]) for row in rows],
+            [(row["course_id"], row["section_id"]) for row in rows],
         )
     )
 
