@@ -104,7 +104,7 @@ def get_course_waitlist(
     return GetCourseWaitlistResponse(
         waitlist=database.list_waitlist(
             db,
-            [(row["waitlist.user_id"], row["sections.id"]) for row in rows],
+            [(row["user_id"], row["section_id"]) for row in rows],
         )
     )
 
@@ -179,13 +179,11 @@ def list_section_waitlist(
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_row_for_section(section_id)
 
-    rows = [extract_row(row, "waitlist") for row in rows]
-    waitlist = database.list_waitlist(
-        db,
-        [(row["user_id"], row["section_id"]) for row in rows],
-    )
     return ListSectionWaitlistResponse(
-        waitlist=[ListSectionWaitlistItem(**dict(item)) for item in waitlist]
+        waitlist=database.list_waitlist(
+            db,
+            [(row["user_id"], row["section_id"]) for row in rows],
+        )
     )
 
 
@@ -257,13 +255,11 @@ def list_user_waitlist(
     # jwt_user: int = Depends(require_x_user),
     # jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> ListUserWaitlistResponse:
-    
     # if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
     #     raise HTTPException(status_code=403, detail="Not authorized")
 
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_rows_for_user(user_id)
-    # print(rows)
 
     return ListUserWaitlistResponse(
         waitlist=database.list_waitlist(

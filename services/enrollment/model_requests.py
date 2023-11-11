@@ -56,13 +56,8 @@ class ListSectionEnrollmentsResponse(BaseModel):
     enrollments: list[ListSectionEnrollmentsItem]
 
 
-class ListSectionWaitlistItem(BaseModel):
-    user_id: int
-    position: int
-
-
 class ListSectionWaitlistResponse(BaseModel):
-    waitlist: list[ListSectionWaitlistItem]
+    waitlist: list[Waitlist]
 
 
 class ListUserEnrollmentsResponse(BaseModel):
