@@ -253,11 +253,11 @@ def list_user_sections(
 def list_user_waitlist(
     user_id: int,
     db: sqlite3.Connection = Depends(get_db),
-    # jwt_user: int = Depends(require_x_user),
-    # jwt_roles: list[Role] = Depends(require_x_roles),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> ListUserWaitlistResponse:
-    # if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_rows_for_user(user_id)
