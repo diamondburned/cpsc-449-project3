@@ -3,7 +3,7 @@ import boto3
 # Initialize Boto3 DynamoDB resource
 dynamodb = boto3.resource(
     'dynamodb',
-    endpoint_url='http://localhost:5500',  # Use the appropriate endpoint URL for DynamoDB Local
+    endpoint_url='http://localhost:5600',  # Use the appropriate endpoint URL for DynamoDB Local
 )
 
 # Define user data

@@ -12,4 +12,4 @@ redis_conn = redis.Redis(
 # Flush all data in Redis
 redis_conn.flushall()
 
-print("Redis data cleared.")
+print("Flushed existing data from Redis.")

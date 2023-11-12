@@ -12,3 +12,8 @@ echo
 
 echo "Initializing authentication database..."
 python3 -m services.authentication.schema_init
+echo
+
+echo "Initializing redis database..."
+python3 internal/flush_redis_store.py
+python3 internal/insert_redis_waitlist_testdata.py

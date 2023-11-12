@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError
 # Initialize Boto3 DynamoDB resource
 dynamodb = boto3.resource(
     'dynamodb',
-    endpoint_url='http://localhost:5500',  # Use the appropriate endpoint URL for DynamoDB Local
+    endpoint_url='http://localhost:5600',  # Use the appropriate endpoint URL for DynamoDB Local
 )
 
 # Create the User table
