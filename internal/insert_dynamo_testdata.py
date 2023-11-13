@@ -114,14 +114,14 @@ department_data = [
 course_data = [
     {
         'id': 1,
-        'name': 'CPSC 449',
-        'description': 'Web Back-End Engineering',
+        'code': 'CPSC 449',
+        'name': 'Web Back-End Engineering',
         'department_id': 1
     },
     {
         'id': 2,
-        'name': 'MATH 150A',
-        'description': 'Calculus I',
+        'code': 'MATH 150A',
+        'name': 'Calculus I',
         'department_id': 3
     }
 ]
@@ -131,54 +131,54 @@ section_data = [
     {
         'id': 1,
         'course_id': 1,
-        'section_code': 'CS102',
-        'capacity': 30,
-        'enrollment_count': 15,
-        'day_of_week': 'Tuesday',
-        'start_time': '7pm',
+        'classroom': 'CS102',
+        'capacity': 5,
+        'waitlist_capacity': 0,
+        'day': 'Tuesday',
+        'begin_time': '7pm',
         'end_time': '9:45pm',
-        'instructor': 2,
-        'waitlist_count': 0,
-        'waitlist_capacity': 0
+        'instructor_id': 2,
+        'freeze': False,
+        'deleted': False
     },
     {
         'id': 2,
         'course_id': 1,
-        'section_code': 'CS104',
+        'classroom': 'CS104',
         'capacity': 30,
-        'enrollment_count': 15,
-        'day_of_week': 'Wednesday',
-        'start_time': '4pm',
+        'waitlist_capacity': 0,
+        'day': 'Wednesday',
+        'begin_time': '4pm',
         'end_time': '6:45pm',
-        'instructor': 2,
-        'waitlist_count': 0,
-        'waitlist_capacity': 0
+        'instructor_id': 2,
+        'freeze': False,
+        'deleted': False
     },
     {
         'id': 3,
         'course_id': 2,
-        'section_code': 'MH302',
+        'classroom': 'MH302',
         'capacity': 35,
-        'enrollment_count': 15,
-        'day_of_week': 'Monday',
-        'start_time': '12pm',
+        'waitlist_capacity': 0,
+        'day': 'Monday',
+        'begin_time': '12pm',
         'end_time': '2:45pm',
-        'instructor': 4,
-        'waitlist_count': 0,
-        'waitlist_capacity': 0
+        'instructor_id': 4,
+        'freeze': False,
+        'deleted': False
     },
     {
         'id': 4,
         'course_id': 2,
-        'section_code': 'MH107',
+        'classroom': 'MH107',
         'capacity': 32,
-        'enrollment_count': 15,
-        'day_of_week': 'Thursday',
-        'start_time': '9am',
+        'waitlist_capacity': 0,
+        'day': 'Thursday',
+        'begin_time': '9am',
         'end_time': '11:30am',
-        'instructor': 4,
-        'waitlist_count': 0,
-        'waitlist_capacity': 0
+        'instructor_id': 4,
+        'freeze': False,
+        'deleted': False
     }
 ]
 
@@ -189,91 +189,91 @@ enrollment_data = [
         'section_id': 1,
         'status': 'Enrolled',
         'grade': 'A',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 6,
         'section_id': 1,
         'status': 'Enrolled',
         'grade': 'B',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 7,
         'section_id': 1,
         'status': 'Enrolled',
         'grade': 'C',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 8,
         'section_id': 1,
         'status': 'Enrolled',
         'grade': 'B+',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 9,
         'section_id': 2,
         'status': 'Enrolled',
         'grade': 'A-',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 10,
         'section_id': 2,
         'status': 'Dropped',
         'grade': None,
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 11,
         'section_id': 2,
         'status': 'Enrolled',
         'grade': 'A+',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 12,
         'section_id': 3,
         'status': 'Enrolled',
         'grade': 'C+',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 13,
         'section_id': 3,
         'status': 'Dropped',
         'grade': None,
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 14,
         'section_id': 4,
         'status': 'Enrolled',
         'grade': 'A-',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 5,
         'section_id': 3,
         'status': 'Enrolled',
         'grade': 'B',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 6,
         'section_id': 4,
         'status': 'Enrolled',
         'grade': 'B',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     },
     {
         'user_id': 7,
         'section_id': 2,
         'status': 'Enrolled',
         'grade': 'B',
-        'enrollment_date': '2023-09-15'
+        'date': '2023-09-15'
     }
 ]
 
@@ -287,26 +287,21 @@ enrollment_table = dynamodb.Table('Enrollment')
 # Insert user data into the User table
 for item in user_data:
     user_table.put_item(Item=item)
-print("User data inserted successfully.")
 
 # Insert department data into the Department table
 for item in department_data:
     department_table.put_item(Item=item)
-print("Department data inserted successfully.")
 
 # Insert course data into the Course table
 for item in course_data:
     course_table.put_item(Item=item)
-print("Course data inserted successfully.")
 
 # Insert department data into the Department table
 for item in section_data:
     section_table.put_item(Item=item)
-print("Section data inserted successfully.")
 
 # Insert enrollment data into the Enrollment table
 for item in enrollment_data:
     enrollment_table.put_item(Item=item)
-print("Enrollment data inserted successfully.")
 
 print("Data inserted successfully.")

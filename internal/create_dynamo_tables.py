@@ -7,7 +7,7 @@ dynamodb = boto3.resource(
     endpoint_url='http://localhost:5600',  # Use the appropriate endpoint URL for DynamoDB Local
 )
 
-# Create the User table
+# Create the User table with on-demand capacity mode
 user_table = dynamodb.create_table(
     TableName='User',
     KeySchema=[
@@ -20,7 +20,7 @@ user_table = dynamodb.create_table(
         {
             'AttributeName': 'id',
             'AttributeType': 'N'  # Number
-        }
+        },
     ],
     BillingMode='PAY_PER_REQUEST'  # Set to on-demand capacity mode
 )
@@ -63,11 +63,34 @@ courses_table = dynamodb.create_table(
         },
         {
             'AttributeName': 'department_id',
-            'AttributeType': 'N'  # String
-        }
+            'AttributeType': 'N'  # Number
+        },
+        {
+            'AttributeName': 'code',
+            'AttributeType': 'S'  # String
+        },
     ],
-    BillingMode='PAY_PER_REQUEST'  # Set to on-demand capacity mode
+    BillingMode='PAY_PER_REQUEST',  # Set to on-demand capacity mode
+    GlobalSecondaryIndexes=[
+        {
+            'IndexName': 'DepartmentIndex',
+            'KeySchema': [
+                {
+                    'AttributeName': 'department_id',
+                    'KeyType': 'HASH'  # Partition key for the secondary index
+                },
+                {
+                    'AttributeName': 'code',
+                    'KeyType': 'RANGE'  # Sort key for the secondary index
+                }
+            ],
+            'Projection': {
+                'ProjectionType': 'ALL',  # The desired projection type
+            },
+        }
+    ]
 )
+
 
 # Create the Enrollments table with on-demand capacity mode
 enrollments_table = dynamodb.create_table(
@@ -105,17 +128,21 @@ sections_table = dynamodb.create_table(
             'KeyType': 'HASH'  # Partition key
         },
         {
-            'AttributeName': 'instructor',
+            'AttributeName': 'id',
             'KeyType': 'RANGE'  # Sort key
         }
     ],
     AttributeDefinitions=[
         {
+            'AttributeName': 'id',
+            'AttributeType': 'N'  # Number
+        },
+        {
             'AttributeName': 'course_id',
             'AttributeType': 'N'  # Number
         },
         {
-            'AttributeName': 'instructor',
+            'AttributeName': 'instructor_id',
             'AttributeType': 'N'  # Number
         }
     ],
@@ -125,11 +152,63 @@ sections_table = dynamodb.create_table(
             'IndexName': 'CourseInstructor',  # Updated valid index name
             'KeySchema': [
                 {
-                    'AttributeName': 'instructor',
+                    'AttributeName': 'instructor_id',
                     'KeyType': 'HASH'  # Partition key for the secondary index
                 },
                 {
                     'AttributeName': 'course_id',
+                    'KeyType': 'RANGE'  # Sort key for the secondary index
+                }
+            ],
+            'Projection': {
+                'ProjectionType': 'ALL',  # The desired projection type
+            },
+        }
+    ]
+)
+
+# Create the Waitlist table with on-demand capacity mode
+waitlist_table = dynamodb.create_table(
+    TableName='Waitlist',
+    KeySchema=[
+        {
+            'AttributeName': 'user_id',
+            'KeyType': 'HASH'  # Partition key
+        },
+        {
+            'AttributeName': 'section_id',
+            'KeyType': 'RANGE'  # Sort key
+        }
+    ],
+    AttributeDefinitions=[
+        {
+            'AttributeName': 'user_id',
+            'AttributeType': 'N'  # Number
+        },
+        {
+            'AttributeName': 'section_id',
+            'AttributeType': 'N'  # Number
+        },
+        {
+            'AttributeName': 'course_id',
+            'AttributeType': 'N'  # Number
+        },
+        {
+            'AttributeName': 'position',
+            'AttributeType': 'N'  # Number
+        }
+    ],
+    BillingMode='PAY_PER_REQUEST',  # Set to on-demand capacity mode
+    GlobalSecondaryIndexes=[
+        {
+            'IndexName': 'CourseIndex',
+            'KeySchema': [
+                {
+                    'AttributeName': 'course_id',
+                    'KeyType': 'HASH'  # Partition key for the secondary index
+                },
+                {
+                    'AttributeName': 'position',
                     'KeyType': 'RANGE'  # Sort key for the secondary index
                 }
             ],
