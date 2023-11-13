@@ -1,6 +1,7 @@
 import redis
 from datetime import datetime
 
+
 class WaitlistManager:
     _instance = None
 
@@ -10,32 +11,32 @@ class WaitlistManager:
             cls._instance.init(*args, **kwargs)
         return cls._instance
 
-    def init(self, host='localhost', port=6379, db=0, password=None, socket_timeout=None):
+    def init(
+        self, host="localhost", port=6379, db=0, password=None, socket_timeout=None
+    ):
         self.redis_conn = redis.Redis(
             host=host,
             port=port,
             db=db,
             password=password,
-            socket_timeout=socket_timeout
+            socket_timeout=socket_timeout,
         )
 
     def extract_user_data(self, user_data):
-            # Extract user data
-            current_user_id = int(user_data.get(b'user_id', b'').decode('utf-8'))
-            current_course_id = int(user_data.get(b'course_id', b'').decode('utf-8'))
-            current_section_id = int(user_data.get(b'section_id', b'').decode('utf-8'))
-            current_position = int(user_data.get(b'position', b'').decode('utf-8'))
-            current_date = user_data.get(b'date', b'').decode('utf-8')
+        # Extract user data
+        current_user_id = int(user_data.get(b"user_id", b"").decode("utf-8"))
+        current_course_id = int(user_data.get(b"course_id", b"").decode("utf-8"))
+        current_section_id = int(user_data.get(b"section_id", b"").decode("utf-8"))
+        current_position = int(user_data.get(b"position", b"").decode("utf-8"))
+        current_date = user_data.get(b"date", b"").decode("utf-8")
 
-            return {
-                "user_id": current_user_id,
-                "section_id": current_section_id,
-                "course_id": current_course_id,
-                "position": current_position,
-                "date": current_date
-            }
-
-
+        return {
+            "user_id": current_user_id,
+            "section_id": current_section_id,
+            "course_id": current_course_id,
+            "position": current_position,
+            "date": current_date,
+        }
 
     def add_to_waitlist(self, user_id, section_id, course_id, position):
         print(user_id, section_id, course_id, position)
@@ -56,7 +57,7 @@ class WaitlistManager:
             self.redis_conn.hset(user_key, field, value)
 
         return position
-    
+
     def get_waitlist_row_for_course(self, course_id):
         # Retrieve waitlist details for all sections
         waitlist_details = []
@@ -68,7 +69,7 @@ class WaitlistManager:
                 waitlist_details.append(extracted_data)
 
         return waitlist_details
-    
+
     def get_waitlist_row_for_section(self, section_id):
         # Retrieve waitlist details for all sections
         waitlist_details = []
@@ -80,7 +81,7 @@ class WaitlistManager:
                 waitlist_details.append(extracted_data)
 
         return waitlist_details
-    
+
     def get_waitlist_rows_for_user(self, user_id):
         # Retrieve waitlist details for all sections
         waitlist_details = []
@@ -102,7 +103,7 @@ class WaitlistManager:
         waitlist_count = sum(1 for _ in matching_keys)
 
         return waitlist_count
-    
+
     def get_waitlist_count_for_user(self, user_id):
         # Get the key pattern for the waitlist entries related to the specified user
         waitlist_key_pattern = f"user:{user_id}:section:*"
@@ -123,7 +124,7 @@ class WaitlistManager:
         is_on_waitlist = self.redis_conn.exists(user_key)
 
         return is_on_waitlist
-    
+
     def remove_and_get_position(self, user_id, section_id):
         # Construct the key for the user's waitlist entry
         user_key = f"user:{user_id}:section:{section_id}"
@@ -136,7 +137,7 @@ class WaitlistManager:
 
         # Return the position (returns None if user is not found in the waitlist)
         return int(position)
-    
+
     def decrement_positions_for_others(self, section_id, position):
         user_key_pattern = f"user:*:section:{section_id}"
 
@@ -157,19 +158,8 @@ class WaitlistManager:
             self.redis_conn.delete(user_key)
 
 
-        
-    
-
-
-
 # Example usage
 # waitlist = WaitlistManager()
 # position = waitlist.remove_and_get_position(8, 3)
 # waitlist.decrement_positions_for_others(3, position)
 # print("scucess")
-
-
-
-
-
-

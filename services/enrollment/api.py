@@ -88,6 +88,7 @@ def list_courses() -> ListCoursesResponse:
     courses = get_courses_with_departments()
     return ListCoursesResponse(courses=courses)
 
+
 @app.get("/courses/{course_id}")
 def get_course(
     course_id: int,
@@ -106,7 +107,7 @@ def get_course_waitlist(
 ):
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_row_for_course(course_id)
-    
+
     return GetCourseWaitlistResponse(
         waitlist=database.list_waitlist(
             db,
@@ -114,6 +115,7 @@ def get_course_waitlist(
             [row for row in rows],
         )
     )
+
 
 @app.get("/sections")
 def list_sections(
@@ -182,7 +184,6 @@ def list_section_waitlist(
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
 ) -> ListSectionWaitlistResponse:
-    
     waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_row_for_section(section_id)
 
@@ -277,6 +278,7 @@ def list_user_waitlist(
         )
     )
 
+
 @app.post("/users/{user_id}/enrollments")  # student attempt to enroll in class
 def create_enrollment(
     user_id: int,
@@ -321,11 +323,13 @@ def create_enrollment(
     else:
         waitlist = WaitlistManager()
 
-        waitlist_count_for_section = waitlist.get_waitlist_count_for_section(enrollment.section)
-        d['waitlist_count_for_section'] = waitlist_count_for_section
+        waitlist_count_for_section = waitlist.get_waitlist_count_for_section(
+            enrollment.section
+        )
+        d["waitlist_count_for_section"] = waitlist_count_for_section
 
         waitlist_count_for_user = waitlist.get_waitlist_count_for_user(user_id)
-        d['waitlist_count_for_user'] = waitlist_count_for_user
+        d["waitlist_count_for_user"] = waitlist_count_for_user
 
         # Otherwise, try to add them to the waitlist.
         id = fetch_row(
@@ -342,7 +346,6 @@ def create_enrollment(
             d,
         )
         if id:
-
             row = fetch_row(
                 db,
                 """
@@ -352,8 +355,10 @@ def create_enrollment(
                 """,
                 d,
             )
-            course_id = dict(row)['sections.course_id']
-            waitlist_position = waitlist.add_to_waitlist(user_id, enrollment.section, course_id, waitlist_count_for_section)
+            course_id = dict(row)["sections.course_id"]
+            waitlist_position = waitlist.add_to_waitlist(
+                user_id, enrollment.section, course_id, waitlist_count_for_section
+            )
 
             # Ensure that there's also a waitlist enrollment.
             write_row(
@@ -492,21 +497,23 @@ def drop_user_waitlist(
 ):
     if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     waitlist = WaitlistManager()
 
     # Check if user is on the waitlist for a particular section
-    user_on_waitlist_for_section = waitlist.check_user_on_waitlist_for_section(user_id, section_id)
+    user_on_waitlist_for_section = waitlist.check_user_on_waitlist_for_section(
+        user_id, section_id
+    )
 
     if not user_on_waitlist_for_section:
         raise HTTPException(
             status_code=400,
             detail="User is not on the waitlist.",
         )
-    
+
     # Remove the user from the waitlist and return their position
     position = waitlist.remove_and_get_position(user_id, section_id)
-    
+
     # Decrement the posistion of all the users that came after the user that was removed
     waitlist.decrement_positions_for_others(section_id, position)
 

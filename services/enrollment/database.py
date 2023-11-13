@@ -123,31 +123,26 @@ def list_enrollments(
 def list_waitlist(
     db: sqlite3.Connection,
     user_section_ids: list[tuple[int, int]] | None = None,
-    waitlist_items: any = None
+    waitlist_items: any = None,
 ) -> list[Waitlist]:
-
     if len(waitlist_items) != 0:
         waitlist_query = """
             INSERT INTO waitlist VALUES
         """
         for item in waitlist_items:
-            user_id = item['user_id']
-            section_id = item['section_id']
-            course_id = item['course_id']
-            position = item['position']
-            date = item['date']
-            waitlist_query += f'({user_id},{section_id},{course_id},{position},{date}),'
-        
+            user_id = item["user_id"]
+            section_id = item["section_id"]
+            course_id = item["course_id"]
+            position = item["position"]
+            date = item["date"]
+            waitlist_query += f"({user_id},{section_id},{course_id},{position},{date}),"
 
         # Remove the last comma and add a semicolon
-        waitlist_query = waitlist_query[:-1] + ';'
+        waitlist_query = waitlist_query[:-1] + ";"
         print(waitlist_query)
 
         # Ensure that there's also a waitlist enrollment.
-        write_row(
-            db,
-            waitlist_query
-        )
+        write_row(db, waitlist_query)
 
     q = """
         SELECT
@@ -173,7 +168,7 @@ def list_waitlist(
         db,
         """
         DELETE FROM waitlist
-        """
+        """,
     )
 
     return [
