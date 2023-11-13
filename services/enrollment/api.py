@@ -84,8 +84,8 @@ app = FastAPI()
 
 
 @app.get("/courses")
-def list_courses() -> ListCoursesResponse:
-    courses = get_courses_with_departments()
+def list_courses(db: DynamoDB = Depends(get_dynamodb)) -> ListCoursesResponse:
+    courses = get_courses_with_departments(db)
     return ListCoursesResponse(courses=courses)
 
 
