@@ -24,7 +24,6 @@ def get_department_details(department_table, department_id):
     department_items = response_department.get("Items", [])
     return department_items[0] if department_items else None
 
-
 def format_course(course, department_data):
     """
     Format the course item based on the department details.
@@ -36,17 +35,22 @@ def format_course(course, department_data):
         "department": {
             "id": department_data.get("id"),
             "name": department_data.get("name"),
-            # Add other department attributes as needed
         },
     }
 
-
-def get_courses_with_departments():
+def get_courses_with_departments(course_id=None):
     courses_table = get_dynamodb_table("Course")
     department_table = get_dynamodb_table("Department")
 
-    # Use scan to retrieve all items in the 'Course' table
-    response_courses = courses_table.scan()
+    # Use query to retrieve a specific course if course_id is provided
+    if course_id:
+        response_courses = courses_table.query(
+            KeyConditionExpression="id = :id",
+            ExpressionAttributeValues={":id": int(course_id)},
+        )
+    else:
+        # Use scan to retrieve all items in the 'Course' table
+        response_courses = courses_table.scan()
 
     # Extract the items from the response
     courses = response_courses.get("Items", [])

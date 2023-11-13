@@ -91,12 +91,11 @@ def list_courses() -> ListCoursesResponse:
 
 @app.get("/courses/{course_id}")
 def get_course(
-    course_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    course_id: int
 ) -> Course:
-    courses = database.list_courses(db, [course_id])
+    courses = get_courses_with_departments(course_id)
     if len(courses) == 0:
-        raise HTTPException(status_code=404, detail="Course not found")
+            raise HTTPException(status_code=404, detail="Course not found")
     return courses[0]
 
 
