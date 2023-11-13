@@ -116,24 +116,32 @@ def get_course_waitlist(
     )
 
 
+# @app.get("/sections")
+# def list_sections(
+#     course_id: Optional[int] = None,
+#     db: sqlite3.Connection = Depends(get_db),
+# ) -> ListSectionsResponse:
+#     section_ids = fetch_rows(
+#         db,
+#         """
+#         SELECT id
+#         FROM sections
+#         WHERE deleted = FALSE
+#         """
+#         + ("" if course_id is None else "AND course_id = :course_id"),
+#         {"course_id": course_id},
+#     )
+#     return ListSectionsResponse(
+#         sections=database.list_sections(db, [row["sections.id"] for row in section_ids])
+#     )
+    
 @app.get("/sections")
 def list_sections(
     course_id: Optional[int] = None,
     db: sqlite3.Connection = Depends(get_db),
-) -> ListSectionsResponse:
-    section_ids = fetch_rows(
-        db,
-        """
-        SELECT id
-        FROM sections
-        WHERE deleted = FALSE
-        """
-        + ("" if course_id is None else "AND course_id = :course_id"),
-        {"course_id": course_id},
-    )
-    return ListSectionsResponse(
-        sections=database.list_sections(db, [row["sections.id"] for row in section_ids])
-    )
+):
+    sections = get_sections(course_id)
+    return {"test": sections}
 
 
 @app.get("/sections/{section_id}")

@@ -69,3 +69,57 @@ def get_courses_with_departments(course_id=None):
             formatted_courses.append(formatted_course)
 
     return formatted_courses
+
+
+def format_section(section, course):
+    """
+    Format the section item based on the course details.
+    """
+    return {
+        "id": section.get("id"),
+        "course": {
+            "id": course.get("id"),
+            "code": course.get("code"),
+            "name": course.get("name"),
+            "department": {
+                "id": course["department"]["id"],
+                "name": course["department"]["name"],
+            },
+        },
+        "classroom": section.get("classroom"),
+        "capacity": int(section.get("capacity")),
+        "waitlist_capacity": int(section.get("waitlist_capacity")),
+        "day": section.get("day"),
+        "begin_time": section.get("begin_time"),
+        "end_time": section.get("end_time"),
+        "freeze": bool(section.get("freeze")),
+        "instructor_id": int(section.get("instructor_id")),
+    }
+
+def get_sections(course_id=None):
+    sections_table = get_dynamodb_table("Section")
+
+    # Use query to retrieve sections for a specific course if course_id is provided
+    if course_id:
+        response_sections = sections_table.query(
+            IndexName='course_id-index',  # Assuming there's a global secondary index on 'course_id'
+            KeyConditionExpression="course_id = :course_id",
+            ExpressionAttributeValues={":course_id": int(course_id)},
+        )
+    else:
+        # Use scan to retrieve all items in the 'Section' table
+        response_sections = sections_table.scan()
+
+    # Extract the items from the response
+    sections = response_sections.get("Items", [])
+
+    formatted_sections = []
+
+    for section in sections:
+        courses = get_courses_with_departments(section.get("course_id"))
+        course = courses[0]
+
+        formatted_section = format_section(section, course)
+        formatted_sections.append(formatted_section)
+
+    return formatted_sections
