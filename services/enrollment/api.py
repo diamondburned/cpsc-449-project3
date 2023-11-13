@@ -6,8 +6,9 @@ import base64
 import time
 import sqlite3
 from typing import Optional
+import boto3
 
-from internal.database import extract_row, get_db, fetch_rows, fetch_row, write_row
+from internal.database import extract_row, get_db, fetch_rows, fetch_row, write_row, get_dynamodb_table
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRoute
 from fastapi import FastAPI, Depends, HTTPException, Header
@@ -74,12 +75,56 @@ app = FastAPI()
 #      just call /users' method though)
 #   X /sections/{section_id} (remove section, registrar only)
 
-@app.get("/courses")
-def list_courses(
-    db: sqlite3.Connection = Depends(get_db),
-) -> ListCoursesResponse:
-    return ListCoursesResponse(courses=database.list_courses(db))
 
+# @app.get("/courses")
+# def list_courses(
+#     db: sqlite3.Connection = Depends(get_db),
+# ) -> ListCoursesResponse:
+#     return ListCoursesResponse(courses=database.list_courses(db))
+
+@app.get("/courses")
+def list_courses()  -> ListCoursesResponse:
+    courses_table = get_dynamodb_table("Course")
+    department_table = get_dynamodb_table("Department")
+    
+    # Use scan to retrieve all items in the 'Course' table
+    response_courses = courses_table.scan()
+    
+    # Extract the items from the response
+    courses = response_courses.get('Items', [])
+
+    formatted_courses = []
+
+    for item in courses:
+        department_id = item["department_id"]
+
+        # Use query to retrieve items based on the hash key in the 'Department' table
+        response_department = department_table.query(
+            KeyConditionExpression='id = :id',
+            ExpressionAttributeValues={
+                ':id': int(department_id)
+            }
+        )
+        
+        # Access the Items attribute from the response
+        department_items = response_department.get('Items', [])
+        
+        # If department_items has at least one item, format the course item
+        if department_items:
+            department_data = department_items[0]  # Assuming only one item is expected
+            formatted_course = {
+                "id": item.get('id'),
+                "code": item.get('code'),
+                "name": item.get('name'),
+                "department": {
+                    "id": department_data.get('id'),
+                    "name": department_data.get('name'),
+                    # Add other department attributes as needed
+                }
+            }
+            formatted_courses.append(formatted_course)
+
+    return ListCoursesResponse(courses=formatted_courses)
 
 @app.get("/courses/{course_id}")
 def get_course(

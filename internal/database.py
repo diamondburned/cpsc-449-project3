@@ -1,8 +1,10 @@
 import os
+import json
 import contextlib
 import sqlite3
 from typing import Any, Generator, Iterable, Type
 from fastapi import HTTPException
+import boto3
 
 sqlite_path: str | None = None
 
@@ -29,6 +31,17 @@ sqlitePragmaRead = """
 PRAGMA full_column_names = ON;
 PRAGMA short_column_names = OFF;
 """
+
+def get_dynamodb_table(table_name: str):
+    """
+    Get a DynamoDB table resource.
+    """
+    dynamodb = boto3.resource(
+        'dynamodb',
+        endpoint_url='http://localhost:5600',  # Use the appropriate endpoint URL for DynamoDB Local
+    )
+    table = dynamodb.Table(table_name)
+    return table
 
 
 def get_db(db_path: str | None = None) -> Generator[sqlite3.Connection, None, None]:
