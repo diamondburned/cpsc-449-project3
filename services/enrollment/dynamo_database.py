@@ -89,15 +89,16 @@ def format_section(section, course):
     """
     Format the section item based on the course details.
     """
+    print(section)
     return {
         "id": section.get("id"),
         "course": {
-            "id": course.get("id"),
-            "code": course.get("code"),
-            "name": course.get("name"),
+            "id": course.id,
+            "code": course.code,
+            "name": course.name,
             "department": {
-                "id": course["department"]["id"],
-                "name": course["department"]["name"],
+                "id": course.department.id,
+                "name": course.department.name,
             },
         },
         "classroom": section.get("classroom"),
@@ -111,18 +112,14 @@ def format_section(section, course):
     }
 
 
-def get_sections(
-    db: DynamoDB,
-    course_id=None,
-) -> list[Course]:
+def get_sections(db: DynamoDB, section_id=None) -> list[Course]:
     sections_table = db.Table("Section")
 
-    # Use query to retrieve sections for a specific course if course_id is provided
-    if course_id:
-        response_sections = sections_table.query(
-            IndexName="course_id-index",  # Assuming there's a global secondary index on 'course_id'
-            KeyConditionExpression="course_id = :course_id",
-            ExpressionAttributeValues={":course_id": int(course_id)},
+    # Use scan to retrieve a specific section if section_id is provided
+    if section_id is not None:
+        response_sections = sections_table.scan(
+            FilterExpression="id = :section_id",
+            ExpressionAttributeValues={":section_id": int(section_id)},
         )
     else:
         # Use scan to retrieve all items in the 'Section' table
@@ -134,10 +131,50 @@ def get_sections(
     formatted_sections = []
 
     for section in sections:
+        # Get course information based on section's course_id
         courses = get_courses_with_departments(db, section.get("course_id"))
-        course = courses[0]
+        if courses:
+            course = courses[0]
 
-        formatted_section = format_section(section, course)
-        formatted_sections.append(formatted_section)
+            formatted_section = format_section(section, course)
+            formatted_sections.append(formatted_section)
 
     return formatted_sections
+
+def get_instructor(db: DynamoDB, instructor_id):
+    instructor_table = db.Table("User")
+
+    response_instructor = instructor_table.query(
+        KeyConditionExpression="id = :id",
+        ExpressionAttributeValues={":id": int(instructor_id)},
+    )
+
+    instructor_items = response_instructor.get("Items", [])
+
+    return instructor_items[0] if instructor_items else None
+
+def list_waitlist(db: DynamoDB, waitlist):
+    for waitlist_item in waitlist:
+        section_id = waitlist_item.get("section_id")
+        section = get_sections(db, section_id)
+
+        # Check if section information is available
+        if section:
+            # Remove section_id and course_id from the waitlist_item dictionary
+            waitlist_item.pop("section_id", None)
+            waitlist_item.pop("course_id", None)
+
+            # Get instructor information based on section's instructor_id
+            instructor_id = section[0].get("instructor_id")
+            instructor = get_instructor(db, instructor_id)  # Implement get_instructor function
+
+            # Add the section and instructor information to the waitlist item
+            waitlist_item["section"] = section[0]  # Assuming get_sections returns a list
+            waitlist_item["instructor"] = instructor  # Assuming get_instructor returns instructor info
+
+            # Print the combined information
+            print(waitlist_item)
+        else:
+            # If section information is not available, print the waitlist item as is
+            print("Section not found for waitlist item:", waitlist_item)
+    return waitlist

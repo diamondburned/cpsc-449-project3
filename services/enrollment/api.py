@@ -96,52 +96,29 @@ def get_course_waitlist(
     db: DynamoDB = Depends(get_dynamodb),
     waitlist: WaitlistManager = Depends(get_waitlist_manager),
 ):
-    rows = waitlist.get_waitlist_row_for_course(course_id)
-    raise HTTPException(status_code=500)
-    # return GetCourseWaitlistResponse(
-    #     waitlist=database.list_waitlist(
-    #         db,
-    #         [(row["user_id"], row["section_id"]) for row in rows],
-    #         [row for row in rows],
-    #     )
-    # )
-
-
-# @app.get("/sections")
-# def list_sections(
-#     course_id: Optional[int] = None,
-#     db: sqlite3.Connection = Depends(get_db),
-# ) -> ListSectionsResponse:
-#     section_ids = fetch_rows(
-#         db,
-#         """
-#         SELECT id
-#         FROM sections
-#         WHERE deleted = FALSE
-#         """
-#         + ("" if course_id is None else "AND course_id = :course_id"),
-#         {"course_id": course_id},
-#     )
-#     return ListSectionsResponse(
-#         sections=database.list_sections(db, [row["sections.id"] for row in section_ids])
-#     )
+    course_waitlist = waitlist.get_waitlist_row_for_course(course_id)
+    waitlist = list_waitlist(db, course_waitlist)
+    return GetCourseWaitlistResponse(
+        waitlist = list_waitlist(db, course_waitlist)
+    )
 
 
 @app.get("/sections")
 def list_sections(
-    course_id: Optional[int] = None,
     db: DynamoDB = Depends(get_dynamodb),
-):
-    sections = get_sections(db, course_id)
-    return {"test": sections}
+) -> ListSectionsResponse:
+    sections = get_sections(db)
+    return ListSectionsResponse(
+        sections=sections
+    )
 
 
 @app.get("/sections/{section_id}")
 def get_section(
     section_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
 ) -> Section:
-    sections = database.list_sections(db, [section_id])
+    sections = get_sections(db, section_id)
     if len(sections) == 0:
         raise HTTPException(status_code=404, detail="Section not found")
     return sections[0]
