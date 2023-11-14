@@ -19,7 +19,7 @@ from . import database
 from .dynamo_database import *
 from .models import *
 from .model_requests import *
-from .waitlist import WaitlistManager
+from .waitlist import WaitlistManager, get_waitlist_manager
 
 app = FastAPI()
 
@@ -75,6 +75,7 @@ app = FastAPI()
 #      just call /users' method though)
 #   X /sections/{section_id} (remove section, registrar only)
 
+
 @app.get("/courses")
 def list_courses(db: DynamoDB = Depends(get_dynamodb)) -> ListCoursesResponse:
     courses = get_courses_with_departments(db)
@@ -82,8 +83,8 @@ def list_courses(db: DynamoDB = Depends(get_dynamodb)) -> ListCoursesResponse:
 
 
 @app.get("/courses/{course_id}")
-def get_course(course_id: int) -> Course:
-    courses = get_courses_with_departments(course_id)
+def get_course(course_id: int, db: DynamoDB = Depends(get_dynamodb)) -> Course:
+    courses = get_courses_with_departments(db, course_id)
     if len(courses) == 0:
         raise HTTPException(status_code=404, detail="Course not found")
     return courses[0]
@@ -92,18 +93,18 @@ def get_course(course_id: int) -> Course:
 @app.get("/courses/{course_id}/waitlist")
 def get_course_waitlist(
     course_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
+    waitlist: WaitlistManager = Depends(get_waitlist_manager),
 ):
-    waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_row_for_course(course_id)
-
-    return GetCourseWaitlistResponse(
-        waitlist=database.list_waitlist(
-            db,
-            [(row["user_id"], row["section_id"]) for row in rows],
-            [row for row in rows],
-        )
-    )
+    raise HTTPException(status_code=500)
+    # return GetCourseWaitlistResponse(
+    #     waitlist=database.list_waitlist(
+    #         db,
+    #         [(row["user_id"], row["section_id"]) for row in rows],
+    #         [row for row in rows],
+    #     )
+    # )
 
 
 # @app.get("/sections")
@@ -124,13 +125,14 @@ def get_course_waitlist(
 #     return ListSectionsResponse(
 #         sections=database.list_sections(db, [row["sections.id"] for row in section_ids])
 #     )
-    
+
+
 @app.get("/sections")
 def list_sections(
     course_id: Optional[int] = None,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
 ):
-    sections = get_sections(course_id)
+    sections = get_sections(db, course_id)
     return {"test": sections}
 
 
@@ -180,8 +182,8 @@ def list_section_enrollments(
 def list_section_waitlist(
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
+    waitlist: WaitlistManager = Depends(get_waitlist_manager),
 ) -> ListSectionWaitlistResponse:
-    waitlist = WaitlistManager()
     rows = waitlist.get_waitlist_row_for_section(section_id)
 
     return ListSectionWaitlistResponse(
@@ -489,13 +491,12 @@ def drop_user_waitlist(
     user_id: int,
     section_id: int,
     db: sqlite3.Connection = Depends(get_db),
+    waitlist: WaitlistManager = Depends(get_waitlist_manager),
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
 ):
     if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
-
-    waitlist = WaitlistManager()
 
     # Check if user is on the waitlist for a particular section
     user_on_waitlist_for_section = waitlist.check_user_on_waitlist_for_section(
@@ -559,7 +560,11 @@ def drop_section_enrollment(
 
 
 @app.delete("/sections/{section_id}")
-def delete_section(section_id: int, db: sqlite3.Connection = Depends(get_db)):
+def delete_section(
+    section_id: int,
+    db: sqlite3.Connection = Depends(get_db),
+    waitlist: WaitlistManager = Depends(get_waitlist_manager),
+):
     # check validity of section_id
     get_section(section_id, db)
 
@@ -589,7 +594,6 @@ def delete_section(section_id: int, db: sqlite3.Connection = Depends(get_db)):
         drop_user_enrollment(u[0], section_id, db)
 
     # drop waitlisted users
-    waitlist = WaitlistManager()
     waitlist.remove_all_in_section(section_id)
 
 

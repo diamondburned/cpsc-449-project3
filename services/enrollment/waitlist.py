@@ -1,3 +1,5 @@
+from typing import Generator
+from fastapi import HTTPException
 import redis
 from datetime import datetime
 
@@ -131,6 +133,8 @@ class WaitlistManager:
 
         # Get the position of the user in the waitlist before removal
         position = self.redis_conn.hget(user_key, "position")
+        if position is None:
+            raise HTTPException(status_code=404, detail="User not found in waitlist")
 
         # Remove the user's entry from the waitlist hash
         self.redis_conn.delete(user_key)
@@ -144,6 +148,7 @@ class WaitlistManager:
         # Iterate through all keys matching the pattern
         for user_key in self.redis_conn.scan_iter(match=user_key_pattern):
             user_position = self.redis_conn.hget(user_key, "position")
+            assert user_position is not None
 
             # Decrement position for users with greater position
             if int(user_position) > position:
@@ -163,3 +168,10 @@ class WaitlistManager:
 # position = waitlist.remove_and_get_position(8, 3)
 # waitlist.decrement_positions_for_others(3, position)
 # print("scucess")
+
+
+def get_waitlist_manager() -> Generator[WaitlistManager, None, None]:
+    """
+    Get a WaitlistManager instance.
+    """
+    yield WaitlistManager()
