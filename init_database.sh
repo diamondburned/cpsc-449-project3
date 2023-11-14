@@ -8,19 +8,13 @@ fi
 
 echo "Initializing enrollment database..."
 python3 -m services.enrollment.schema_init
+python3 -m services.enrollment.dynamodb.flush_tables
+python3 -m services.enrollment.dynamodb.create_tables
+python3 -m services.enrollment.dynamodb.insert_testdata
+python3 -m services.enrollment.redis.flush_store
+python3 -m services.enrollment.redis.insert_testdata
 echo
 
 echo "Initializing authentication database..."
 python3 -m services.authentication.schema_init
-echo
-
-echo "Initializing redis database..."
-python3 internal/flush_redis_store.py
-python3 internal/insert_redis_waitlist_testdata.py
-echo
-
-echo "Initializing dyanmodb database..."
-python3 internal/flush_dynamo_tables.py
-python3 internal/create_dynamo_tables.py
-python3 internal/insert_dynamo_testdata.py
 echo

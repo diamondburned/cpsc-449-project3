@@ -82,12 +82,10 @@ def list_courses(db: DynamoDB = Depends(get_dynamodb)) -> ListCoursesResponse:
 
 
 @app.get("/courses/{course_id}")
-def get_course(
-    course_id: int
-) -> Course:
+def get_course(course_id: int) -> Course:
     courses = get_courses_with_departments(course_id)
     if len(courses) == 0:
-            raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Course not found")
     return courses[0]
 
 

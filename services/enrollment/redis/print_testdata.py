@@ -13,6 +13,7 @@ def get_all_data():
     user_data = []
     for user_key in user_keys:
         data = redis_conn.hgetall(user_key)
+
         user_data.append(
             {
                 "user_key": user_key.decode("utf-8"),

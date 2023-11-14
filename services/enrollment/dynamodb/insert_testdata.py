@@ -4,7 +4,6 @@ import boto3
 dynamodb = boto3.resource(
     "dynamodb",
     endpoint_url="http://localhost:5600",  # Use the appropriate endpoint URL for DynamoDB Local
-    region_name="us-west-2",
 )
 
 # Define user data
