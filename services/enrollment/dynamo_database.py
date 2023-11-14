@@ -4,6 +4,8 @@ import mypy_boto3_dynamodb
 from fastapi import Depends
 from .models import *
 from dotenv import load_dotenv
+from .waitlist import WaitlistManager, get_waitlist_manager
+from datetime import datetime
 
 load_dotenv()
 
@@ -180,7 +182,7 @@ def list_waitlist(db: DynamoDB, waitlist):
     return waitlist
 
 
-def get_enrollments(db: DynamoDB, section_id, status):
+def get_section_enrollments(db: DynamoDB, section_id, status):
     enrollments_table = db.Table("Enrollment")
     user_table = db.Table("User")
 
@@ -207,3 +209,160 @@ def get_enrollments(db: DynamoDB, section_id, status):
         enrollment.pop("date", None)
 
     return enrollments
+
+def get_user_enrollments(db: DynamoDB, user_id, status):
+    enrollments_table = db.Table("Enrollment")
+
+    response_enrollments = enrollments_table.query(
+        KeyConditionExpression="user_id = :user_id",
+        FilterExpression="#status = :status",
+        ExpressionAttributeValues={":user_id": int(user_id), ":status": status},
+        ExpressionAttributeNames={"#status": "status"},
+    )
+
+    enrollments = response_enrollments.get("Items", [])
+
+    # Fetch user data and remove unnecessary fields for each enrollment
+    for enrollment in enrollments:
+        section_id = enrollment.get("section_id")
+        if section_id:
+            response_section = get_sections(db, section_id)
+            section_data = response_section[0] if response_section else {}
+            enrollment["section"] = section_data
+
+        # Remove unnecessary fields
+        enrollment.pop("date", None)
+        enrollment.pop("section_id", None)
+
+    return enrollments
+
+
+def get_sections_for_user(db: DynamoDB, user_id: int):
+    sections_table = db.Table("Section")
+
+    # Use query to retrieve sections for a specific instructor_id
+    response_sections = sections_table.query(
+        IndexName="CourseInstructor",  # Specify the global secondary index
+        KeyConditionExpression="instructor_id = :instructor_id",
+        ExpressionAttributeValues={":instructor_id": user_id},
+    )
+
+    # Extract the items from the response
+    sections = response_sections.get("Items", [])
+
+    formatted_sections = []
+
+    for section in sections:
+        # Get course information based on section's course_id
+        courses = get_courses_with_departments(db, section.get("course_id"))
+        if courses:
+            course = courses[0]
+
+            formatted_section = format_section(section, course)
+            formatted_sections.append(formatted_section)
+
+    return formatted_sections
+
+def get_section_enrollments_count(db: DynamoDB, section_id, status):
+    enrollments_table = db.Table("Enrollment")
+
+    response_enrollments = enrollments_table.scan(
+        FilterExpression="section_id = :section_id and #status = :status",
+        ExpressionAttributeValues={":section_id": int(section_id), ":status": status},
+        ExpressionAttributeNames={"#status": "status"},
+    )
+
+    enrollments_count = len(response_enrollments.get("Items", []))
+
+    return enrollments_count
+
+def check_section_full(db: DynamoDB, section_id: int):
+    sections_table = db.Table("Section")
+
+    response_sections = sections_table.scan(
+        FilterExpression="id = :section_id",
+        ExpressionAttributeValues={":section_id": int(section_id)},
+    )
+    sections = response_sections.get("Items", [])
+    section = sections[0]
+
+    section_capacity = section["capacity"]
+    enrollment_count = get_section_enrollments_count(db, section_id, "Enrolled")
+
+    return enrollment_count >= section_capacity
+
+def check_waitlist_full(db: DynamoDB, section_id: int):
+    sections_table = db.Table("Section")
+
+    response_sections = sections_table.scan(
+        FilterExpression="id = :section_id",
+        ExpressionAttributeValues={":section_id": int(section_id)},
+    )
+    sections = response_sections.get("Items", [])
+    section = sections[0]
+
+    waitlist_capacity = section["waitlist_capacity"]
+    
+    waitlist = WaitlistManager()
+    waitlist_count = waitlist.get_waitlist_count_for_section(section_id)
+
+    return waitlist_count >= waitlist_capacity
+
+def check_user_exists(db: DynamoDB, user_id: int) -> bool:
+    user_table = db.Table("User")
+
+    response_user = user_table.get_item(Key={"id": user_id})
+    user_data = response_user.get("Item", {})
+
+    return bool(user_data)
+
+def enroll_in_section_as(db: DynamoDB, user_id: int, section_id: int, status):
+    enrollments_table = db.Table("Enrollment")
+
+    new_enrollment = {
+        "user_id": user_id,
+        "section_id": section_id,
+        "status": status,
+        "grade": "",
+        "date": datetime.now().strftime("%Y-%m-%d"),
+    }
+
+    enrollments_table.put_item(Item=new_enrollment)
+
+def add_to_waitlist(db: DynamoDB, user_id: int, section_id: int):
+    enrollments_table = db.Table("Enrollment")
+
+    new_enrollment = {
+        "user_id": user_id,
+        "section_id": section_id,
+        "status": "Enrolled",
+        "grade": "",
+        "date": datetime.now().strftime("%Y-%m-%d"),
+    }
+
+    enrollments_table.put_item(Item=new_enrollment)
+
+def get_course_id_for_section(db: DynamoDB, section_id: int) -> int:
+    sections_table = db.Table("Section")
+
+    response_sections = sections_table.scan(
+        FilterExpression="id = :section_id",
+        ExpressionAttributeValues={":section_id": int(section_id)},
+    )
+    sections = response_sections.get("Items", [])
+    section = sections[0]
+
+    return section["course_id"]
+
+def get_enrollment(db: DynamoDB, user_id: int, section_id: int) -> dict:
+    enrollments_table = db.Table("Enrollment")
+
+    response_enrollment = enrollments_table.get_item(Key={"user_id": user_id, "section_id": section_id})
+    enrollment_data = response_enrollment.get("Item", {})
+    enrollment_data.pop("section_id", None)
+    enrollment_data.pop("date", None)
+
+    section = get_sections(db, section_id)
+    enrollment_data['section'] = section[0]
+    
+    return enrollment_data

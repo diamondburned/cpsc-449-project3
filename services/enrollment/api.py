@@ -129,7 +129,7 @@ def list_section_enrollments(
     section_id: int,
     db: DynamoDB = Depends(get_dynamodb),
 ):
-    enrollments = get_enrollments(db, section_id, "Enrolled")
+    enrollments = get_section_enrollments(db, section_id, "Enrolled")
     return ListSectionEnrollmentsResponse(
         enrollments=enrollments
     )
@@ -138,85 +138,46 @@ def list_section_enrollments(
 @app.get("/sections/{section_id}/waitlist")
 def list_section_waitlist(
     section_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
     waitlist: WaitlistManager = Depends(get_waitlist_manager),
 ) -> ListSectionWaitlistResponse:
-    rows = waitlist.get_waitlist_row_for_section(section_id)
+    section_waitlist = waitlist.get_waitlist_row_for_section(section_id)
 
     return ListSectionWaitlistResponse(
-        waitlist=database.list_waitlist(
-            db,
-            [(row["user_id"], row["section_id"]) for row in rows],
-            [row for row in rows],
-        )
+        waitlist = list_waitlist(db, section_waitlist)
     )
 
 
 @app.get("/users/{user_id}/enrollments")
 def list_user_enrollments(
     user_id: int,
-    status=EnrollmentStatus.ENROLLED,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
-) -> ListUserEnrollmentsResponse:
+)  -> ListUserEnrollmentsResponse:
     if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    rows = fetch_rows(
-        db,
-        """
-        SELECT enrollments.user_id, enrollments.section_id
-        FROM enrollments
-        INNER JOIN sections ON sections.id = enrollments.section_id
-        WHERE
-            enrollments.status = ?
-            AND sections.deleted = FALSE
-            AND enrollments.user_id = ?
-        """,
-        (status, user_id),
-    )
-    rows = [extract_row(row, "enrollments") for row in rows]
+    user_enrollments = get_user_enrollments(db, user_id, "Enrolled")
     return ListUserEnrollmentsResponse(
-        enrollments=database.list_enrollments(
-            db,
-            [(row["user_id"], row["section_id"]) for row in rows],
-        )
+        enrollments=user_enrollments
     )
-
 
 @app.get("/users/{user_id}/sections")
 def list_user_sections(
     user_id: int,
-    type: ListUserSectionsType = ListUserSectionsType.ALL,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
 ) -> ListUserSectionsResponse:
-    q = """
-        SELECT sections.id
-        FROM sections
-        INNER JOIN enrollments ON enrollments.section_id = sections.id
-        WHERE sections.deleted = FALSE AND
-    """
-
-    wheres = []
-    q += "("
-    if type == ListUserSectionsType.ALL or type == ListUserSectionsType.ENROLLED:
-        wheres.append("enrollments.user_id = :user_id")
-    if type == ListUserSectionsType.ALL or type == ListUserSectionsType.INSTRUCTING:
-        wheres.append("sections.instructor_id = :user_id")
-    q += " OR ".join(wheres)
-    q += ")"
-
-    rows = fetch_rows(db, q, {"user_id": user_id})
+    user_sections = get_sections_for_user(db,user_id)
     return ListUserSectionsResponse(
-        sections=database.list_sections(db, [row["sections.id"] for row in rows])
+        sections=user_sections
     )
 
 
 @app.get("/users/{user_id}/waitlist")
 def list_user_waitlist(
     user_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> ListUserWaitlistResponse:
@@ -224,118 +185,74 @@ def list_user_waitlist(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     waitlist = WaitlistManager()
-    rows = waitlist.get_waitlist_rows_for_user(user_id)
+    user_waitlists = waitlist.get_waitlist_rows_for_user(user_id)
 
     return ListUserWaitlistResponse(
-        waitlist=database.list_waitlist(
-            db,
-            [(row["user_id"], row["section_id"]) for row in rows],
-            [row for row in rows],
-        )
+        waitlist=list_waitlist(db, user_waitlists)
     )
-
 
 @app.post("/users/{user_id}/enrollments")  # student attempt to enroll in class
 def create_enrollment(
     user_id: int,
     enrollment: CreateEnrollmentRequest,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
-) -> CreateEnrollmentResponse:
+):
     if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    d = {
-        "user": user_id,
-        "section": enrollment.section,
-    }
+    user_exists = check_user_exists(db, user_id)
+    
+    if not user_exists:
+        raise HTTPException(
+                status_code=400,
+                detail="User does not exist.",
+            )
 
-    waitlist_position = None
 
-    # Verify that the class still has space.
-    id = fetch_row(
-        db,
-        """
-        SELECT id
-        FROM sections as s
-        WHERE s.id = :section
-        AND s.capacity > (SELECT COUNT(*) FROM enrollments WHERE section_id = :section)
-        AND s.freeze = FALSE
-        AND s.deleted = FALSE
-        """,
-        d,
-    )
-    if id:
-        # If there is space, enroll the student.
-        write_row(
-            db,
-            """
-            INSERT INTO enrollments (user_id, section_id, status, grade, date)
-            VALUES(:user, :section, 'Enrolled', NULL, CURRENT_TIMESTAMP)
-            """,
-            d,
+    section_id = enrollment.section
+    section_full = check_section_full(db, section_id)
+    
+    if not section_full:
+        enroll_in_section_as(db, user_id, section_id, "Enrolled")
+        enrollment = get_enrollment(db, user_id, section_id)
+        return CreateEnrollmentResponse(
+            user_id=enrollment["user_id"],
+            section=enrollment["section"],
+            status=enrollment["status"],
+            grade=enrollment["grade"],
+            waitlist_position=None,
         )
     else:
-        waitlist = WaitlistManager()
+        waitlist_full = check_waitlist_full(db, section_id)
+        if not waitlist_full:
+            waitlist = WaitlistManager()
+            waitlist_count_for_user = waitlist.get_waitlist_count_for_user(user_id)
 
-        waitlist_count_for_section = waitlist.get_waitlist_count_for_section(
-            enrollment.section
-        )
-        d["waitlist_count_for_section"] = waitlist_count_for_section
-
-        waitlist_count_for_user = waitlist.get_waitlist_count_for_user(user_id)
-        d["waitlist_count_for_user"] = waitlist_count_for_user
-
-        # Otherwise, try to add them to the waitlist.
-        id = fetch_row(
-            db,
-            """
-            SELECT id
-            FROM sections as s
-            WHERE s.id = :section
-            AND s.waitlist_capacity > :waitlist_count_for_section
-            AND :waitlist_count_for_user < 3
-            AND s.freeze = FALSE
-            AND s.deleted = FALSE
-            """,
-            d,
-        )
-        if id:
-            row = fetch_row(
-                db,
-                """
-                SELECT course_id
-                FROM sections as s
-                WHERE s.id = :section
-                """,
-                d,
-            )
-            course_id = dict(row)["sections.course_id"]
-            waitlist_position = waitlist.add_to_waitlist(
-                user_id, enrollment.section, course_id, waitlist_count_for_section
-            )
-
-            # Ensure that there's also a waitlist enrollment.
-            write_row(
-                db,
-                """
-                INSERT INTO enrollments (user_id, section_id, status, grade, date)
-                VALUES(:user, :section, 'Waitlisted', NULL, CURRENT_TIMESTAMP)
-                """,
-                d,
-            )
+            if waitlist_count_for_user < 3:
+                course_id = get_course_id_for_section(db, section_id)
+                waitlist_position = waitlist.add_to_waitlist(user_id, section_id, course_id)
+                enroll_in_section_as(db, user_id, section_id, "Waitlisted")
+                enrollment = get_enrollment(db, user_id, section_id)
+                return CreateEnrollmentResponse(
+                    user_id=enrollment["user_id"],
+                    section=enrollment["section"],
+                    status=enrollment["status"],
+                    grade=enrollment["grade"],
+                    waitlist_position=waitlist_position
+                )
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Maximum number of waitlisted classes reached.",
+                )
         else:
             raise HTTPException(
                 status_code=400,
                 detail="Section is full and waitlist is full.",
             )
 
-    enrollments = database.list_enrollments(db, [(d["user"], d["section"])])
-    return CreateEnrollmentResponse(
-        **dict(enrollments[0]),
-        waitlist_position=waitlist_position,
-    )
 
 
 @app.post("/courses")

@@ -40,16 +40,16 @@ class WaitlistManager:
             "date": current_date,
         }
 
-    def add_to_waitlist(self, user_id, section_id, course_id, position):
-        print(user_id, section_id, course_id, position)
-        position = position + 1
+    def add_to_waitlist(self, user_id, section_id, course_id):
+        waitlist_count_for_section = self.get_waitlist_count_for_section(section_id)
+        position = waitlist_count_for_section + 1
 
         # Use a Redis hash to store user details
         user_key = f"user:{user_id}:section:{section_id}"
         user_data = {
             "user_id": user_id,
             "section_id": section_id,
-            "course_id": course_id,
+            "course_id": int(course_id),
             "position": position,
             "date": datetime.now().strftime("%Y-%m-%d"),
         }

@@ -75,7 +75,6 @@ enrollments_table = dynamodb.create_table(
 )
 
 
-# Create the Sections table with on-demand capacity mode and a secondary index
 sections_table = dynamodb.create_table(
     TableName="Section",
     KeySchema=[
@@ -95,10 +94,6 @@ sections_table = dynamodb.create_table(
                 {
                     "AttributeName": "instructor_id",
                     "KeyType": "HASH",  # Partition key for the secondary index
-                },
-                {
-                    "AttributeName": "course_id",
-                    "KeyType": "RANGE",  # Sort key for the secondary index
                 },
             ],
             "Projection": {
