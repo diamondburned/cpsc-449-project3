@@ -14,6 +14,7 @@ def get_dynamodb() -> Generator[DynamoDB, None, None]:
     yield boto3.resource(
         "dynamodb",
         endpoint_url="http://localhost:5600",  # Use the appropriate endpoint URL for DynamoDB Local
+        region_name="us-west-2"
     )
 
 
@@ -51,7 +52,6 @@ def get_courses_with_departments(
     db: DynamoDB = Depends(get_dynamodb),
 ) -> list[Course]:
     courses_table = db.Table("Course")
-    department_table = db.Table("Department")
 
     # Use query to retrieve a specific course if course_id is provided
     if course_id:
@@ -107,8 +107,11 @@ def format_section(section, course):
         "instructor_id": int(section.get("instructor_id")),
     }
 
-def get_sections(course_id=None):
-    sections_table = get_dynamodb_table("Section")
+def get_sections(
+    course_id=None,
+    db: DynamoDB = Depends(get_dynamodb),
+) -> list[Course]:
+    sections_table = db.Table("Section")
 
     # Use query to retrieve sections for a specific course if course_id is provided
     if course_id:

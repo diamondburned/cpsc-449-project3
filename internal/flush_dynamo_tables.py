@@ -3,7 +3,8 @@ import boto3
 # Initialize Boto3 DynamoDB resource with the appropriate endpoint URL for DynamoDB Local
 dynamodb = boto3.resource(
     'dynamodb',
-    endpoint_url='http://localhost:5600'
+    endpoint_url='http://localhost:5600',
+    region_name="us-west-2"
 )
 
 def table_exists(table_name):

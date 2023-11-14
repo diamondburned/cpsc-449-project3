@@ -75,14 +75,6 @@ app = FastAPI()
 #      just call /users' method though)
 #   X /sections/{section_id} (remove section, registrar only)
 
-
-# @app.get("/courses")
-# def list_courses(
-#     db: sqlite3.Connection = Depends(get_db),
-# ) -> ListCoursesResponse:
-#     return ListCoursesResponse(courses=database.list_courses(db))
-
-
 @app.get("/courses")
 def list_courses(db: DynamoDB = Depends(get_dynamodb)) -> ListCoursesResponse:
     courses = get_courses_with_departments(db)
