@@ -178,3 +178,32 @@ def list_waitlist(db: DynamoDB, waitlist):
             # If section information is not available, print the waitlist item as is
             print("Section not found for waitlist item:", waitlist_item)
     return waitlist
+
+
+def get_enrollments(db: DynamoDB, section_id, status):
+    enrollments_table = db.Table("Enrollment")
+    user_table = db.Table("User")
+
+    response_enrollments = enrollments_table.scan(
+        FilterExpression="section_id = :section_id and #status = :enrolled",
+        ExpressionAttributeValues={":section_id": int(section_id), ":enrolled": status},
+        ExpressionAttributeNames={"#status": "status"},
+    )
+
+    enrollments = response_enrollments.get("Items", [])
+
+    # Fetch user data and remove unnecessary fields for each enrollment
+    for enrollment in enrollments:
+        user_id = enrollment.get("user_id")
+        if user_id:
+            response_user = user_table.get_item(Key={"id": user_id})
+            user_data = response_user.get("Item", {})
+            enrollment["user"] = user_data
+
+        # Remove unnecessary fields
+        enrollment.pop("section_id", None)
+        enrollment.pop("user_id", None)
+        enrollment.pop("status", None)
+        enrollment.pop("date", None)
+
+    return enrollments

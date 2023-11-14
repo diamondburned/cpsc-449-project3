@@ -127,31 +127,11 @@ def get_section(
 @app.get("/sections/{section_id}/enrollments")
 def list_section_enrollments(
     section_id: int,
-    status=EnrollmentStatus.ENROLLED,
-    db: sqlite3.Connection = Depends(get_db),
-) -> ListSectionEnrollmentsResponse:
-    rows = fetch_rows(
-        db,
-        """
-        SELECT enrollments.user_id, enrollments.section_id
-        FROM enrollments
-        INNER JOIN sections ON sections.id = enrollments.section_id
-        WHERE
-            enrollments.status = ?
-            AND sections.deleted = FALSE
-            AND sections.id = ?
-        """,
-        (status, section_id),
-    )
-    rows = [extract_row(row, "enrollments") for row in rows]
-    enrollments = database.list_enrollments(
-        db,
-        [(row["user_id"], row["section_id"]) for row in rows],
-    )
+    db: DynamoDB = Depends(get_dynamodb),
+):
+    enrollments = get_enrollments(db, section_id, "Enrolled")
     return ListSectionEnrollmentsResponse(
-        enrollments=[
-            ListSectionEnrollmentsItem(**dict(enrollment)) for enrollment in enrollments
-        ]
+        enrollments=enrollments
     )
 
 

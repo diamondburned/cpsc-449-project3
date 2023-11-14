@@ -48,8 +48,8 @@ class AddSectionRequest(BaseModel):
 
 
 class ListSectionEnrollmentsItem(BaseModel):
-    user_id: int
-    grade: str | None
+    user: User
+    grade: str
 
 
 class ListSectionEnrollmentsResponse(BaseModel):
