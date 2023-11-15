@@ -49,7 +49,7 @@ section_data = [
         "id": 1,
         "course_id": 1,
         "classroom": "CS102",
-        "capacity": 5,
+        "capacity": 3,
         "waitlist_capacity": 15,
         "day": "Tuesday",
         "begin_time": "7pm",

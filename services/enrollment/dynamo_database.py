@@ -22,6 +22,17 @@ def get_dynamodb() -> Generator[DynamoDB, None, None]:
         region_name="us-west-2",
     )
 
+def get_user(db: DynamoDB, user_id):
+    user_table = db.Table("User")
+
+    # Retrieve the user with the specified user_id
+    response = user_table.get_item(Key={"id": user_id})
+
+    # Extract the user data from the response
+    user_data = response.get("Item", {})
+
+    return user_data
+
 
 def get_department_details(db: DynamoDB, department_id):
     """
@@ -112,7 +123,6 @@ def format_section(section, course):
         "freeze": bool(section.get("freeze")),
         "instructor_id": int(section.get("instructor_id")),
     }
-
 
 def get_sections(db: DynamoDB, section_id=None) -> list[Course]:
     sections_table = db.Table("Section")
@@ -395,6 +405,47 @@ def update_section_by_id(db: DynamoDB, course_id, section_id, updated_values):
         ExpressionAttributeValues={f":{key}": expression_attribute_values[f"#{key}"] for key in updated_values},
         ExpressionAttributeNames={f"#{key}": key for key in updated_values},
         ReturnValues="UPDATED_NEW",  # Specify the response format
+    )
+
+    # Return the updated section
+    updated_section = response.get("Attributes", {})
+    return updated_section
+
+
+def mark_enrollment_as_dropped(db: DynamoDB, user_id, section_id):
+    enrollments_table = db.Table("Enrollment")
+
+    # Update the enrollment to set the status to "Dropped"
+    response = enrollments_table.update_item(
+        Key={"user_id": user_id, "section_id": section_id},
+        UpdateExpression="SET #status = :status",
+        ExpressionAttributeValues={":status": "Dropped"},
+        ExpressionAttributeNames={"#status": "status"},
+        ReturnValues="ALL_NEW"  # You can adjust this based on your needs
+    )
+
+    # Return the updated enrollment
+    updated_enrollment = response.get("Attributes", {})
+    return updated_enrollment
+
+def delete_enrollment(db: DynamoDB, user_id, section_id):
+    enrollments_table = db.Table("Enrollment")
+
+    # Delete the enrollment with the specified user_id and section_id
+    enrollments_table.delete_item(
+        Key={"user_id": user_id, "section_id": section_id}
+    )
+
+def mark_section_as_deleted(db: DynamoDB, course_id, section_id):
+    sections_table = db.Table("Section")
+
+    # Update the section in DynamoDB to mark it as deleted
+    response = sections_table.update_item(
+        Key={"course_id": course_id, "id": section_id},
+        UpdateExpression="SET #status = :deleted",
+        ExpressionAttributeValues={":deleted": True},
+        ExpressionAttributeNames={"#status": "status"},
+        ReturnValues="ALL_NEW",  # Return all attributes after the update
     )
 
     # Return the updated section

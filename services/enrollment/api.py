@@ -293,42 +293,33 @@ def update_section(
     section_id: int,
     section: UpdateSectionRequest,
     db: DynamoDB = Depends(get_dynamodb),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
 ) -> Section:
+    if Role.REGISTRAR not in jwt_roles:
+        raise HTTPException(status_code=403, detail="Not authorized")
     section = dict(section)
     update_section_by_id(db, section["course_id"], section_id, section)
     section = get_sections(db, section_id)
     return section[0]
 
 
-
 @app.delete("/users/{user_id}/enrollments/{section_id}")
 def drop_user_enrollment(
     user_id: int,
     section_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
 ) -> Enrollment:
-    write_row(
-        db,
-        """
-        UPDATE enrollments
-        SET status = 'Dropped'
-        WHERE
-            user_id = :user_id
-            AND section_id = :section_id
-            AND status = 'Enrolled'
-        """,
-        {"user_id": user_id, "section_id": section_id},
-    )
-
-    enrollments = database.list_enrollments(db, [(user_id, section_id)])
-    return enrollments[0]
+    mark_enrollment_as_dropped(db, user_id, section_id)
+    enrollment = get_enrollment(db, user_id, section_id)
+    return enrollment
 
 
 @app.delete("/users/{user_id}/waitlist/{section_id}")
 def drop_user_waitlist(
     user_id: int,
     section_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
     waitlist: WaitlistManager = Depends(get_waitlist_manager),
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
@@ -353,86 +344,60 @@ def drop_user_waitlist(
     # Decrement the posistion of all the users that came after the user that was removed
     waitlist.decrement_positions_for_others(section_id, position)
 
-    # Delete the waitlist enrollment.
-    write_row(
-        db,
-        """
-        DELETE FROM enrollments
-        WHERE
-            user_id = :user_id
-            AND section_id = :section_id
-            AND status = 'Waitlisted'
-        """,
-        {"user_id": user_id, "section_id": section_id},
-    )
+    # Delete the waitlist enrollment form enrollments.
+    delete_enrollment(db, user_id, section_id)
+    return {"detail": "Successfully removed from waitlist"}
 
 
 @app.delete("/sections/{section_id}/enrollments/{user_id}")
 def drop_section_enrollment(
     section_id: int,
     user_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
-) -> Enrollment:
-    # Ensure the user is instructing the section or is a registrar.
-    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
-        row = fetch_row(
-            db,
-            """
-            SELECT instructor_id FROM sections
-            WHERE id = :section_id
-            """,
-            {"section_id": section_id},
-        )
-        if row is None:
-            raise HTTPException(
+):
+    user = get_user(db, user_id)
+    sections = get_sections(db, section_id)
+    section = sections[0]
+    if not section:
+        raise HTTPException(
                 status_code=404,
                 detail="Section not found.",
             )
-        if row["sections.instructor_id"] != jwt_user:
-            raise HTTPException(status_code=403, detail="Not authorized")
-
-    # No auth so these two methods behave virtually identically.
+    
+    instructor_id = section["instructor_id"]
+    if instructor_id != jwt_user:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
     return drop_user_enrollment(user_id, section_id, db)
 
 
 @app.delete("/sections/{section_id}")
 def delete_section(
     section_id: int,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
     waitlist: WaitlistManager = Depends(get_waitlist_manager),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
 ):
+    if Role.REGISTRAR not in jwt_roles:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
     # check validity of section_id
-    get_section(section_id, db)
+    section = get_section(section_id, db)
+    course_id = section.get("course").get("id")
 
-    # mark section as deleted
-    write_row(
-        db,
-        """
-        UPDATE sections
-        SET deleted = TRUE
-        WHERE id = :section_id
-        """,
-        {"section_id": section_id},
-    )
+    section = mark_section_as_deleted(db, course_id, section_id)
 
-    # drop enrolled users
-    ue = fetch_rows(
-        db,
-        f"""
-        SELECT user_id FROM enrollments
-        WHERE 
-            section_id = :section_id
-        """,
-        {"section_id": section_id},
-    )
-    for u in ue:
-        print(u)
-        drop_user_enrollment(u[0], section_id, db)
+    all_enrollments = get_section_enrollments(db, section_id, "Enrolled")
+    for enrollment in all_enrollments:
+        user_id = enrollment.get("user").get("id")
+        delete_enrollment(db, user_id, section_id)
 
     # drop waitlisted users
     waitlist.remove_all_in_section(section_id)
+    return {"detail": "section successfully dropped."}
 
 
 # https://fastapi.tiangolo.com/advanced/path-operation-advanced-configuration/#using-the-path-operation-function-name-as-the-operationid
