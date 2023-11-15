@@ -366,3 +366,37 @@ def get_enrollment(db: DynamoDB, user_id: int, section_id: int) -> dict:
     enrollment_data['section'] = section[0]
     
     return enrollment_data
+
+def create_section(db: DynamoDB, section):
+    section_table = db.Table("Section")
+    section_table.put_item(Item=section)
+
+
+def update_section_by_id(db: DynamoDB, course_id, section_id, updated_values):
+    section_table = db.Table("Section")
+
+    # Build the update expression and attribute values
+    update_expression = "SET "
+    expression_attribute_values = {}
+
+    updated_values.pop("course_id", None)
+
+    for key, value in updated_values.items():
+        attribute_name = f"#{key}"  # Use expression attribute name to handle reserved keywords
+        update_expression += f"{attribute_name} = :{key}, "
+        expression_attribute_values[attribute_name] = value
+
+    update_expression = update_expression.rstrip(", ")  # Remove trailing comma
+
+    # Update the section in DynamoDB
+    response = section_table.update_item(
+        Key={"course_id": course_id, "id": section_id},
+        UpdateExpression=update_expression,
+        ExpressionAttributeValues={f":{key}": expression_attribute_values[f"#{key}"] for key in updated_values},
+        ExpressionAttributeNames={f"#{key}": key for key in updated_values},
+        ReturnValues="UPDATED_NEW",  # Specify the response format
+    )
+
+    # Return the updated section
+    updated_section = response.get("Attributes", {})
+    return updated_section

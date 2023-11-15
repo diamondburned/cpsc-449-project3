@@ -276,65 +276,29 @@ def add_course(
     except Exception:
         raise HTTPException(status_code=409, detail=f"Failed to add course:")
 
-
+    
 @app.post("/sections")
 def add_section(
     section: AddSectionRequest,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
 ) -> Section:
-    try:
-        row = fetch_row(
-            db,
-            """
-            INSERT INTO sections(course_id, classroom, capacity, waitlist_capacity, day, begin_time, end_time, freeze, instructor_id)
-            VALUES(:course_id, :classroom, :capacity, :waitlist_capacity, :day, :begin_time, :end_time, :freeze, :instructor_id)
-            RETURNING id
-            """,
-            dict(section),
-        )
-        assert row
-        sections = database.list_sections(db, [row["sections.id"]])
-        return sections[0]
-    except Exception:
-        raise HTTPException(status_code=409, detail=f"Failed to add course:")
+    section = dict(section)
+    create_section(db, section)
+    section = get_sections(db, section["id"])
+    return section[0]
 
 
 @app.patch("/sections/{section_id}")
 def update_section(
     section_id: int,
     section: UpdateSectionRequest,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
 ) -> Section:
-    q = """
-    UPDATE sections
-    SET
-    """
-    v = {}
-    for key, value in section.dict().items():
-        if value is not None:
-            q += f"{key} = :{key}, "
-            v[key] = value
+    section = dict(section)
+    update_section_by_id(db, section["course_id"], section_id, section)
+    section = get_sections(db, section_id)
+    return section[0]
 
-    if len(v) == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="No fields provided to update.",
-        )
-
-    q = q[:-2]  # remove trailing comma
-
-    q += """
-    WHERE id = :section_id
-    """
-    v["section_id"] = section_id
-
-    try:
-        write_row(db, q, v)
-    except Exception as e:
-        raise HTTPException(status_code=409, detail=f"Failed to update section:{e}")
-
-    sections = database.list_sections(db, [section_id])
-    return sections[0]
 
 
 @app.delete("/users/{user_id}/enrollments/{section_id}")

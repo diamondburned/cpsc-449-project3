@@ -36,6 +36,7 @@ class AddCourseRequest(BaseModel):
 
 
 class AddSectionRequest(BaseModel):
+    id: int
     course_id: int
     classroom: str
     capacity: int
@@ -73,6 +74,7 @@ class ListUserWaitlistResponse(BaseModel):
 
 
 class UpdateSectionRequest(BaseModel):
+    course_id: int
     classroom: str | None
     capacity: int | None
     waitlist_capacity: int | None
