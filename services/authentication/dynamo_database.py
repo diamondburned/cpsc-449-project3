@@ -38,7 +38,7 @@ def insert_user(db: DynamoDB, user_data):
         "id": user_id,
         "first_name": user_data.get("first_name"),
         "last_name": user_data.get("last_name"),
-        "role": user_data.get("roles")[0],
+        "role": user_data.get("roles")[0].value,
         "username": user_data.get("username"),
     }
 

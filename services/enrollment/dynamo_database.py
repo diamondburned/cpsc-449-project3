@@ -463,3 +463,29 @@ def insert_user(db: DynamoDB, user_data) -> dict:
 
     # Return the inserted user data
     return user_item
+
+def check_section_exists(db: DynamoDB, section_id: int) -> bool:
+    sections_table = db.Table("Section")
+
+    # Use scan to check if the section with the specified section_id exists
+    response = sections_table.scan(
+        FilterExpression="id = :section_id",
+        ExpressionAttributeValues={":section_id": section_id},
+        ProjectionExpression="id",  # Only retrieve the id for efficiency
+    )
+
+    # Check if any items were returned
+    return len(response.get("Items", [])) > 0
+
+def check_user_enrolled(db: DynamoDB, user_id: int, section_id: int) -> bool:
+    enrollments_table = db.Table("Enrollment")
+
+    # Use query to check if the user is enrolled in the specified section
+    response = enrollments_table.query(
+        KeyConditionExpression="user_id = :user_id AND section_id = :section_id",
+        ExpressionAttributeValues={":user_id": user_id, ":section_id": section_id},
+        ProjectionExpression="user_id",  # Only retrieve the user_id for efficiency
+    )
+
+    # Check if any items were returned
+    return len(response.get("Items", [])) > 0

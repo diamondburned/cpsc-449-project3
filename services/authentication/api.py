@@ -82,7 +82,7 @@ def register(
 ) :
     passhash = password.hash(req.password)
 
-    # user_id = insert_user(dynamodb, dict(req))
+    user_id = insert_user(dynamodb, dict(req))
 
     user_row = fetch_row(
         db,

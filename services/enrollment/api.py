@@ -196,11 +196,7 @@ def create_enrollment(
     user_id: int,
     enrollment: CreateEnrollmentRequest,
     db: DynamoDB = Depends(get_dynamodb),
-    jwt_user: int = Depends(require_x_user),
-    jwt_roles: list[Role] = Depends(require_x_roles),
 ):
-    if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
 
     user_exists = check_user_exists(db, user_id)
     
@@ -209,11 +205,17 @@ def create_enrollment(
                 status_code=400,
                 detail="User does not exist.",
             )
-
-
-    section_id = enrollment.section
-    section_full = check_section_full(db, section_id)
     
+    
+    section_id = enrollment.section
+    section_exists = check_section_exists(db, section_id)
+    if not section_exists:
+        raise HTTPException(
+                    status_code=400,
+                    detail="Section does not exist.",
+                )
+    
+    section_full = check_section_full(db, section_id)
     if not section_full:
         enroll_in_section_as(db, user_id, section_id, "Enrolled")
         enrollment = get_enrollment(db, user_id, section_id)
@@ -310,6 +312,29 @@ def drop_user_enrollment(
     section_id: int,
     db: DynamoDB = Depends(get_dynamodb),
 ) -> Enrollment:
+    user_exists = check_user_exists(db, user_id)
+    
+    if not user_exists:
+        raise HTTPException(
+                status_code=400,
+                detail="User does not exist.",
+            )
+    
+    section_exists = check_section_exists(db, section_id)
+    if not section_exists:
+        raise HTTPException(
+                    status_code=400,
+                    detail="Section does not exist.",
+                )
+    
+    user_enrolled = check_user_enrolled(db, user_id, section_id)
+    if not user_enrolled:
+        raise HTTPException(
+                    status_code=400,
+                    detail="User is not enrolled in section.",
+                )
+    
+
     mark_enrollment_as_dropped(db, user_id, section_id)
     enrollment = get_enrollment(db, user_id, section_id)
     return enrollment
@@ -326,12 +351,25 @@ def drop_user_waitlist(
 ):
     if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
+    
+    user_exists = check_user_exists(db, user_id)
+    if not user_exists:
+        raise HTTPException(
+                status_code=400,
+                detail="User does not exist.",
+            )
+    
+    section_exists = check_section_exists(db, section_id)
+    if not section_exists:
+        raise HTTPException(
+                    status_code=400,
+                    detail="Section does not exist.",
+                )
 
     # Check if user is on the waitlist for a particular section
     user_on_waitlist_for_section = waitlist.check_user_on_waitlist_for_section(
         user_id, section_id
     )
-
     if not user_on_waitlist_for_section:
         raise HTTPException(
             status_code=400,
@@ -357,17 +395,31 @@ def drop_section_enrollment(
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
 ):
-    user = get_user(db, user_id)
-    sections = get_sections(db, section_id)
-    section = sections[0]
-    if not section:
+    section_exists = check_section_exists(db, section_id)
+    if not section_exists:
         raise HTTPException(
-                status_code=404,
-                detail="Section not found.",
+                    status_code=400,
+                    detail="Section does not exist.",
+                )
+
+    user_exists = check_user_exists(db, user_id)
+    if not user_exists:
+        raise HTTPException(
+                status_code=400,
+                detail="User does not exist.",
             )
     
+    user_enrolled = check_user_enrolled(db, user_id, section_id)
+    if not user_enrolled:
+        raise HTTPException(
+                    status_code=400,
+                    detail="User is not enrolled in section.",
+                )
+    
+    sections = get_sections(db, section_id)
+    section = sections[0]
     instructor_id = section["instructor_id"]
-    if instructor_id != jwt_user:
+    if instructor_id != jwt_user or Role.INSTRUCTOR not in jwt_roles:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     return drop_user_enrollment(user_id, section_id, db)
@@ -384,6 +436,13 @@ def delete_section(
     if Role.REGISTRAR not in jwt_roles:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    section_exists = check_section_exists(db, section_id)
+    if not section_exists:
+        raise HTTPException(
+                    status_code=400,
+                    detail="Section does not exist.",
+                )
+    
     # check validity of section_id
     section = get_section(section_id, db)
     course_id = section.get("course").get("id")
@@ -397,7 +456,7 @@ def delete_section(
 
     # drop waitlisted users
     waitlist.remove_all_in_section(section_id)
-    return {"detail": "section successfully dropped."}
+    return {"detail": "section successfully deleted."}
 
 
 # https://fastapi.tiangolo.com/advanced/path-operation-advanced-configuration/#using-the-path-operation-function-name-as-the-operationid
