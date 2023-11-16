@@ -7,6 +7,7 @@ import time
 import sqlite3
 from typing import Optional
 
+
 from internal.database import (
     extract_row,
     fetch_rows,
@@ -22,6 +23,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from . import database
 from .database import get_db, get_read_db, get_user_roles
 from services.models import *
+from .dynamo_database import *
 
 
 app = FastAPI()
@@ -36,7 +38,7 @@ class LoginRequest(BaseModel):
 def login(
     req: LoginRequest,
     db: sqlite3.Connection = Depends(get_read_db),
-) -> jwt_claims.Token:
+) :
     user_row = fetch_row(
         db,
         "SELECT id, passhash FROM users WHERE username = ?",
@@ -76,8 +78,11 @@ class RegisterResponse(BaseModel):
 def register(
     req: RegisterRequest,
     db: sqlite3.Connection = Depends(get_db),
-) -> RegisterResponse:
+    dynamodb: DynamoDB = Depends(get_dynamodb),
+) :
     passhash = password.hash(req.password)
+
+    # user_id = insert_user(dynamodb, dict(req))
 
     user_row = fetch_row(
         db,
@@ -111,6 +116,17 @@ class User(BaseModel):
     roles: list[Role]
     first_name: str
     last_name: str
+
+@app.get("/check/{user_id}")
+def get_user(user_id: int, db: sqlite3.Connection = Depends(get_read_db)):
+        # Fetch and return the user data for the inserted row
+    user_row = fetch_row(
+        db,
+        "SELECT id, username, first_name, last_name, passhash FROM users WHERE id = ?",
+        (user_id,),
+    )
+
+    return {"test": user_row}
 
 
 @app.get("/users/{id}")

@@ -25,6 +25,23 @@
       ]
     },
     {
+      "endpoint": "/check/{user_id}",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/check/{user_id}",
+          "host": [
+            "http://127.0.0.1:5200"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    },
+    {
       "endpoint": "/login",
       "method": "POST",
       "backend": [
@@ -43,7 +60,7 @@
       "extra_config": {
         "auth/signer": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -80,7 +97,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -124,7 +141,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -168,7 +185,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -212,7 +229,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -259,7 +276,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -308,7 +325,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -357,7 +374,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -423,7 +440,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -468,7 +485,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -522,7 +539,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -556,7 +573,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"
@@ -590,7 +607,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "kid": "project-2-group-4-kid-01",
+          "kid": "project-3-group-9-kid-01",
           "keys_to_sign": [
             "access_token",
             "refresh_token"

@@ -451,3 +451,15 @@ def mark_section_as_deleted(db: DynamoDB, course_id, section_id):
     # Return the updated section
     updated_section = response.get("Attributes", {})
     return updated_section
+
+def insert_user(db: DynamoDB, user_data) -> dict:
+    user_table = db.Table("User")
+
+    # Convert CreateUserRequest to a dictionary
+    user_item = user_data.dict()
+
+    # Insert the new user into the User table
+    user_table.put_item(Item=user_item)
+
+    # Return the inserted user data
+    return user_item
