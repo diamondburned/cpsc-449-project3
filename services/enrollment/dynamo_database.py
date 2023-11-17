@@ -377,10 +377,13 @@ def get_enrollment(db: DynamoDB, user_id: int, section_id: int) -> dict:
     
     return enrollment_data
 
+def create_course(db: DynamoDB, course):
+    course_table = db.Table("Course")
+    course_table.put_item(Item=course)
+
 def create_section(db: DynamoDB, section):
     section_table = db.Table("Section")
     section_table.put_item(Item=section)
-
 
 def update_section_by_id(db: DynamoDB, course_id, section_id, updated_values):
     section_table = db.Table("Section")
