@@ -30,6 +30,7 @@ class CreateEnrollmentResponse(Enrollment):
 
 
 class AddCourseRequest(BaseModel):
+    id: int
     code: str
     name: str
     department_id: int
