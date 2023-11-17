@@ -260,23 +260,12 @@ def create_enrollment(
 @app.post("/courses")
 def add_course(
     course: AddCourseRequest,
-    db: sqlite3.Connection = Depends(get_db),
+    db: DynamoDB = Depends(get_dynamodb),
 ) -> Course:
-    try:
-        row = fetch_row(
-            db,
-            """
-            INSERT INTO courses(code, name, department_id)
-            VALUES(:code, :name, :department_id)
-            RETURNING id
-            """,
-            dict(course),
-        )
-        assert row
-        courses = database.list_courses(db, [row["courses.id"]])
-        return courses[0]
-    except Exception:
-        raise HTTPException(status_code=409, detail=f"Failed to add course:")
+    course = dict(course)
+    create_course(db, course)
+    course = get_courses_with_departments(db, course["id"])
+    return course[0]
 
     
 @app.post("/sections")
