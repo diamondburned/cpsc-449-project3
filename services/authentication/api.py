@@ -38,7 +38,7 @@ class LoginRequest(BaseModel):
 def login(
     req: LoginRequest,
     db: sqlite3.Connection = Depends(get_read_db),
-) :
+):
     user_row = fetch_row(
         db,
         "SELECT id, passhash FROM users WHERE username = ?",
@@ -79,7 +79,7 @@ def register(
     req: RegisterRequest,
     db: sqlite3.Connection = Depends(get_db),
     dynamodb: DynamoDB = Depends(get_dynamodb),
-) :
+):
     passhash = password.hash(req.password)
 
     user_id = insert_user(dynamodb, dict(req))
@@ -117,9 +117,10 @@ class User(BaseModel):
     first_name: str
     last_name: str
 
+
 @app.get("/check/{user_id}")
 def get_user(user_id: int, db: sqlite3.Connection = Depends(get_read_db)):
-        # Fetch and return the user data for the inserted row
+    # Fetch and return the user data for the inserted row
     user_row = fetch_row(
         db,
         "SELECT id, username, first_name, last_name, passhash FROM users WHERE id = ?",

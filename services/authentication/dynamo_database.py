@@ -20,6 +20,7 @@ def get_dynamodb() -> Generator[DynamoDB, None, None]:
         region_name="us-west-2",
     )
 
+
 def get_total_users_count(db: DynamoDB) -> int:
     user_table = db.Table("User")
 
@@ -31,6 +32,7 @@ def get_total_users_count(db: DynamoDB) -> int:
 
     # Return the count of users
     return len(users)
+
 
 def insert_user(db: DynamoDB, user_data):
     user_id = get_total_users_count(db) + 1

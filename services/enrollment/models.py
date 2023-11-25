@@ -2,11 +2,13 @@ from enum import Enum
 from pydantic import BaseModel
 from services.models import *
 
+
 class User(BaseModel):
     id: int
     role: str
     first_name: str
     last_name: str
+
 
 class Department(BaseModel):
     id: int

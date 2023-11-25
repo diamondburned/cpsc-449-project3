@@ -22,6 +22,7 @@ def get_dynamodb() -> Generator[DynamoDB, None, None]:
         region_name="us-west-2",
     )
 
+
 def get_user(db: DynamoDB, user_id):
     user_table = db.Table("User")
 
@@ -124,6 +125,7 @@ def format_section(section, course):
         "instructor_id": int(section.get("instructor_id")),
     }
 
+
 def get_sections(db: DynamoDB, section_id=None) -> list[Course]:
     sections_table = db.Table("Section")
 
@@ -153,6 +155,7 @@ def get_sections(db: DynamoDB, section_id=None) -> list[Course]:
 
     return formatted_sections
 
+
 def get_instructor(db: DynamoDB, instructor_id):
     instructor_table = db.Table("User")
 
@@ -164,6 +167,7 @@ def get_instructor(db: DynamoDB, instructor_id):
     instructor_items = response_instructor.get("Items", [])
 
     return instructor_items[0] if instructor_items else None
+
 
 def list_waitlist(db: DynamoDB, waitlist):
     for waitlist_item in waitlist:
@@ -178,11 +182,17 @@ def list_waitlist(db: DynamoDB, waitlist):
 
             # Get instructor information based on section's instructor_id
             instructor_id = section[0].get("instructor_id")
-            instructor = get_instructor(db, instructor_id)  # Implement get_instructor function
+            instructor = get_instructor(
+                db, instructor_id
+            )  # Implement get_instructor function
 
             # Add the section and instructor information to the waitlist item
-            waitlist_item["section"] = section[0]  # Assuming get_sections returns a list
-            waitlist_item["instructor"] = instructor  # Assuming get_instructor returns instructor info
+            waitlist_item["section"] = section[
+                0
+            ]  # Assuming get_sections returns a list
+            waitlist_item[
+                "instructor"
+            ] = instructor  # Assuming get_instructor returns instructor info
 
             # Print the combined information
             print(waitlist_item)
@@ -219,6 +229,7 @@ def get_section_enrollments(db: DynamoDB, section_id, status):
         enrollment.pop("date", None)
 
     return enrollments
+
 
 def get_user_enrollments(db: DynamoDB, user_id, status):
     enrollments_table = db.Table("Enrollment")
@@ -273,6 +284,7 @@ def get_sections_for_user(db: DynamoDB, user_id: int):
 
     return formatted_sections
 
+
 def get_section_enrollments_count(db: DynamoDB, section_id, status):
     enrollments_table = db.Table("Enrollment")
 
@@ -285,6 +297,7 @@ def get_section_enrollments_count(db: DynamoDB, section_id, status):
     enrollments_count = len(response_enrollments.get("Items", []))
 
     return enrollments_count
+
 
 def check_section_full(db: DynamoDB, section_id: int):
     sections_table = db.Table("Section")
@@ -301,6 +314,7 @@ def check_section_full(db: DynamoDB, section_id: int):
 
     return enrollment_count >= section_capacity
 
+
 def check_waitlist_full(db: DynamoDB, section_id: int):
     sections_table = db.Table("Section")
 
@@ -312,11 +326,12 @@ def check_waitlist_full(db: DynamoDB, section_id: int):
     section = sections[0]
 
     waitlist_capacity = section["waitlist_capacity"]
-    
+
     waitlist = WaitlistManager()
     waitlist_count = waitlist.get_waitlist_count_for_section(section_id)
 
     return waitlist_count >= waitlist_capacity
+
 
 def check_user_exists(db: DynamoDB, user_id: int) -> bool:
     user_table = db.Table("User")
@@ -325,6 +340,7 @@ def check_user_exists(db: DynamoDB, user_id: int) -> bool:
     user_data = response_user.get("Item", {})
 
     return bool(user_data)
+
 
 def enroll_in_section_as(db: DynamoDB, user_id: int, section_id: int, status):
     enrollments_table = db.Table("Enrollment")
@@ -339,6 +355,7 @@ def enroll_in_section_as(db: DynamoDB, user_id: int, section_id: int, status):
 
     enrollments_table.put_item(Item=new_enrollment)
 
+
 def add_to_waitlist(db: DynamoDB, user_id: int, section_id: int):
     enrollments_table = db.Table("Enrollment")
 
@@ -352,6 +369,7 @@ def add_to_waitlist(db: DynamoDB, user_id: int, section_id: int):
 
     enrollments_table.put_item(Item=new_enrollment)
 
+
 def get_course_id_for_section(db: DynamoDB, section_id: int) -> int:
     sections_table = db.Table("Section")
 
@@ -364,26 +382,32 @@ def get_course_id_for_section(db: DynamoDB, section_id: int) -> int:
 
     return section["course_id"]
 
+
 def get_enrollment(db: DynamoDB, user_id: int, section_id: int) -> dict:
     enrollments_table = db.Table("Enrollment")
 
-    response_enrollment = enrollments_table.get_item(Key={"user_id": user_id, "section_id": section_id})
+    response_enrollment = enrollments_table.get_item(
+        Key={"user_id": user_id, "section_id": section_id}
+    )
     enrollment_data = response_enrollment.get("Item", {})
     enrollment_data.pop("section_id", None)
     enrollment_data.pop("date", None)
 
     section = get_sections(db, section_id)
-    enrollment_data['section'] = section[0]
-    
+    enrollment_data["section"] = section[0]
+
     return enrollment_data
+
 
 def create_course(db: DynamoDB, course):
     course_table = db.Table("Course")
     course_table.put_item(Item=course)
 
+
 def create_section(db: DynamoDB, section):
     section_table = db.Table("Section")
     section_table.put_item(Item=section)
+
 
 def update_section_by_id(db: DynamoDB, course_id, section_id, updated_values):
     section_table = db.Table("Section")
@@ -395,7 +419,9 @@ def update_section_by_id(db: DynamoDB, course_id, section_id, updated_values):
     updated_values.pop("course_id", None)
 
     for key, value in updated_values.items():
-        attribute_name = f"#{key}"  # Use expression attribute name to handle reserved keywords
+        attribute_name = (
+            f"#{key}"  # Use expression attribute name to handle reserved keywords
+        )
         update_expression += f"{attribute_name} = :{key}, "
         expression_attribute_values[attribute_name] = value
 
@@ -405,7 +431,9 @@ def update_section_by_id(db: DynamoDB, course_id, section_id, updated_values):
     response = section_table.update_item(
         Key={"course_id": course_id, "id": section_id},
         UpdateExpression=update_expression,
-        ExpressionAttributeValues={f":{key}": expression_attribute_values[f"#{key}"] for key in updated_values},
+        ExpressionAttributeValues={
+            f":{key}": expression_attribute_values[f"#{key}"] for key in updated_values
+        },
         ExpressionAttributeNames={f"#{key}": key for key in updated_values},
         ReturnValues="UPDATED_NEW",  # Specify the response format
     )
@@ -424,20 +452,20 @@ def mark_enrollment_as_dropped(db: DynamoDB, user_id, section_id):
         UpdateExpression="SET #status = :status",
         ExpressionAttributeValues={":status": "Dropped"},
         ExpressionAttributeNames={"#status": "status"},
-        ReturnValues="ALL_NEW"  # You can adjust this based on your needs
+        ReturnValues="ALL_NEW",  # You can adjust this based on your needs
     )
 
     # Return the updated enrollment
     updated_enrollment = response.get("Attributes", {})
     return updated_enrollment
 
+
 def delete_enrollment(db: DynamoDB, user_id, section_id):
     enrollments_table = db.Table("Enrollment")
 
     # Delete the enrollment with the specified user_id and section_id
-    enrollments_table.delete_item(
-        Key={"user_id": user_id, "section_id": section_id}
-    )
+    enrollments_table.delete_item(Key={"user_id": user_id, "section_id": section_id})
+
 
 def mark_section_as_deleted(db: DynamoDB, course_id, section_id):
     sections_table = db.Table("Section")
@@ -455,6 +483,7 @@ def mark_section_as_deleted(db: DynamoDB, course_id, section_id):
     updated_section = response.get("Attributes", {})
     return updated_section
 
+
 def insert_user(db: DynamoDB, user_data) -> dict:
     user_table = db.Table("User")
 
@@ -466,6 +495,7 @@ def insert_user(db: DynamoDB, user_data) -> dict:
 
     # Return the inserted user data
     return user_item
+
 
 def check_section_exists(db: DynamoDB, section_id: int) -> bool:
     sections_table = db.Table("Section")
@@ -479,6 +509,7 @@ def check_section_exists(db: DynamoDB, section_id: int) -> bool:
 
     # Check if any items were returned
     return len(response.get("Items", [])) > 0
+
 
 def check_user_enrolled(db: DynamoDB, user_id: int, section_id: int) -> bool:
     enrollments_table = db.Table("Enrollment")
