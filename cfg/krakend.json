@@ -25,23 +25,6 @@
       ]
     },
     {
-      "endpoint": "/check/{user_id}",
-      "method": "GET",
-      "backend": [
-        {
-          "url_pattern": "/check/{user_id}",
-          "host": [
-            "http://127.0.0.1:5200"
-          ],
-          "extra_config": {
-            "backend/http": {
-              "return_error_code": true
-            }
-          }
-        }
-      ]
-    },
-    {
       "endpoint": "/login",
       "method": "POST",
       "backend": [
