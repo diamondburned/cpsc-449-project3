@@ -14,10 +14,10 @@ GOOS=linux
 GOARCH=
 	
 case $(uname -m) in
-x86_64)
+x86_64|amd64)
 	GOARCH=amd64
 	;;
-aarch64)
+aarch64|arm64)
 	GOARCH=arm64
 	;;
 *)
