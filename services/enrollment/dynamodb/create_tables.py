@@ -1,5 +1,10 @@
 import boto3
 from botocore.exceptions import ClientError
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 
 # Initialize Boto3 DynamoDB resource
 dynamodb = boto3.resource(

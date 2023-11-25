@@ -97,7 +97,6 @@ def get_course_waitlist(
     waitlist: WaitlistManager = Depends(get_waitlist_manager),
 ):
     course_waitlist = waitlist.get_waitlist_row_for_course(course_id)
-    waitlist = list_waitlist(db, course_waitlist)
     return GetCourseWaitlistResponse(waitlist=list_waitlist(db, course_waitlist))
 
 
@@ -123,9 +122,10 @@ def get_section(
 @app.get("/sections/{section_id}/enrollments")
 def list_section_enrollments(
     section_id: int,
+    status=EnrollmentStatus.ENROLLED,
     db: DynamoDB = Depends(get_dynamodb),
 ):
-    enrollments = get_section_enrollments(db, section_id, "Enrolled")
+    enrollments = get_section_enrollments(db, section_id, status)
     return ListSectionEnrollmentsResponse(enrollments=enrollments)
 
 
@@ -143,6 +143,7 @@ def list_section_waitlist(
 @app.get("/users/{user_id}/enrollments")
 def list_user_enrollments(
     user_id: int,
+    status=EnrollmentStatus.ENROLLED,
     db: DynamoDB = Depends(get_dynamodb),
     jwt_user: int = Depends(require_x_user),
     jwt_roles: list[Role] = Depends(require_x_roles),
@@ -150,7 +151,7 @@ def list_user_enrollments(
     if Role.REGISTRAR not in jwt_roles and jwt_user != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    user_enrollments = get_user_enrollments(db, user_id, "Enrolled")
+    user_enrollments = get_user_enrollments(db, user_id, status)
     return ListUserEnrollmentsResponse(enrollments=user_enrollments)
 
 
@@ -182,7 +183,7 @@ def list_user_waitlist(
 @app.post("/users/{user_id}/enrollments")  # student attempt to enroll in class
 def create_enrollment(
     user_id: int,
-    enrollment: CreateEnrollmentRequest,
+    req: CreateEnrollmentRequest,
     db: DynamoDB = Depends(get_dynamodb),
 ):
     user_exists = check_user_exists(db, user_id)
@@ -193,7 +194,7 @@ def create_enrollment(
             detail="User does not exist.",
         )
 
-    section_id = enrollment.section
+    section_id = req.section
     section_exists = check_section_exists(db, section_id)
     if not section_exists:
         raise HTTPException(
@@ -206,10 +207,7 @@ def create_enrollment(
         enroll_in_section_as(db, user_id, section_id, "Enrolled")
         enrollment = get_enrollment(db, user_id, section_id)
         return CreateEnrollmentResponse(
-            user_id=enrollment["user_id"],
-            section=enrollment["section"],
-            status=enrollment["status"],
-            grade=enrollment["grade"],
+            **enrollment.dict(),
             waitlist_position=None,
         )
     else:
@@ -226,10 +224,7 @@ def create_enrollment(
                 enroll_in_section_as(db, user_id, section_id, "Waitlisted")
                 enrollment = get_enrollment(db, user_id, section_id)
                 return CreateEnrollmentResponse(
-                    user_id=enrollment["user_id"],
-                    section=enrollment["section"],
-                    status=enrollment["status"],
-                    grade=enrollment["grade"],
+                    **enrollment.dict(),
                     waitlist_position=waitlist_position,
                 )
             else:
@@ -246,24 +241,22 @@ def create_enrollment(
 
 @app.post("/courses")
 def add_course(
-    course: AddCourseRequest,
+    req: AddCourseRequest,
     db: DynamoDB = Depends(get_dynamodb),
 ) -> Course:
-    course = dict(course)
-    create_course(db, course)
-    course = get_courses_with_departments(db, course["id"])
-    return course[0]
+    create_course(db, req.dict())
+    courses = get_courses_with_departments(db, req.id)
+    return courses[0]
 
 
 @app.post("/sections")
 def add_section(
-    section: AddSectionRequest,
+    req: AddSectionRequest,
     db: DynamoDB = Depends(get_dynamodb),
 ) -> Section:
-    section = dict(section)
-    create_section(db, section)
-    section = get_sections(db, section["id"])
-    return section[0]
+    create_section(db, req.dict())
+    sections = get_sections(db, req.id)
+    return sections[0]
 
 
 @app.patch("/sections/{section_id}")
@@ -276,10 +269,9 @@ def update_section(
 ) -> Section:
     if Role.REGISTRAR not in jwt_roles:
         raise HTTPException(status_code=403, detail="Not authorized")
-    section = dict(section)
-    update_section_by_id(db, section["course_id"], section_id, section)
-    section = get_sections(db, section_id)
-    return section[0]
+    update_section_by_id(db, section.course_id, section_id, section)
+    sections = get_sections(db, section_id)
+    return sections[0]
 
 
 @app.delete("/users/{user_id}/enrollments/{section_id}")
@@ -393,7 +385,7 @@ def drop_section_enrollment(
 
     sections = get_sections(db, section_id)
     section = sections[0]
-    instructor_id = section["instructor_id"]
+    instructor_id = section.instructor_id
     if instructor_id != jwt_user or Role.INSTRUCTOR not in jwt_roles:
         raise HTTPException(status_code=403, detail="Not authorized")
 
@@ -420,13 +412,13 @@ def delete_section(
 
     # check validity of section_id
     section = get_section(section_id, db)
-    course_id = section.get("course").get("id")
+    course_id = section.course.id
 
     section = mark_section_as_deleted(db, course_id, section_id)
 
-    all_enrollments = get_section_enrollments(db, section_id, "Enrolled")
+    all_enrollments = get_section_enrollments(db, section_id, None)
     for enrollment in all_enrollments:
-        user_id = enrollment.get("user").get("id")
+        user_id = enrollment.user.id
         delete_enrollment(db, user_id, section_id)
 
     # drop waitlisted users

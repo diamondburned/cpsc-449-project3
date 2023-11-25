@@ -1,7 +1,16 @@
 from typing import Generator
 from fastapi import HTTPException
-import redis
 from datetime import datetime
+from pydantic import BaseModel
+import redis
+
+
+class WaitlistModel(BaseModel):
+    user_id: int
+    course_id: int
+    section_id: int
+    position: int
+    date: str
 
 
 class WaitlistManager:
@@ -14,7 +23,12 @@ class WaitlistManager:
         return cls._instance
 
     def init(
-        self, host="localhost", port=6379, db=0, password=None, socket_timeout=None
+        self,
+        host="localhost",
+        port=6379,
+        db=0,
+        password=None,
+        socket_timeout=None,
     ):
         self.redis_conn = redis.Redis(
             host=host,
@@ -24,7 +38,7 @@ class WaitlistManager:
             socket_timeout=socket_timeout,
         )
 
-    def extract_user_data(self, user_data):
+    def extract_user_data(self, user_data) -> WaitlistModel:
         # Extract user data
         current_user_id = int(user_data.get(b"user_id", b"").decode("utf-8"))
         current_course_id = int(user_data.get(b"course_id", b"").decode("utf-8"))
@@ -32,13 +46,13 @@ class WaitlistManager:
         current_position = int(user_data.get(b"position", b"").decode("utf-8"))
         current_date = user_data.get(b"date", b"").decode("utf-8")
 
-        return {
-            "user_id": current_user_id,
-            "section_id": current_section_id,
-            "course_id": current_course_id,
-            "position": current_position,
-            "date": current_date,
-        }
+        return WaitlistModel(
+            user_id=current_user_id,
+            section_id=current_section_id,
+            course_id=current_course_id,
+            position=current_position,
+            date=current_date,
+        )
 
     def add_to_waitlist(self, user_id, section_id, course_id):
         waitlist_count_for_section = self.get_waitlist_count_for_section(section_id)
@@ -46,47 +60,47 @@ class WaitlistManager:
 
         # Use a Redis hash to store user details
         user_key = f"user:{user_id}:section:{section_id}"
-        user_data = {
-            "user_id": user_id,
-            "section_id": section_id,
-            "course_id": int(course_id),
-            "position": position,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-        }
+        user_data = WaitlistModel(
+            user_id=user_id,
+            section_id=section_id,
+            course_id=int(course_id),
+            position=position,
+            date=datetime.now().strftime("%Y-%m-%d"),
+        )
 
         # Use hset to set each field individually
-        for field, value in user_data.items():
+        for field, value in user_data.dict().items():
             self.redis_conn.hset(user_key, field, value)
 
         return position
 
     def get_waitlist_row_for_course(self, course_id):
         # Retrieve waitlist details for all sections
-        waitlist_details = []
+        waitlist_details: list[WaitlistModel] = []
         for key in self.redis_conn.scan_iter():
             user_data = self.redis_conn.hgetall(key)
             extracted_data = self.extract_user_data(user_data)
 
-            if extracted_data["course_id"] == course_id:
+            if extracted_data.course_id == course_id:
                 waitlist_details.append(extracted_data)
 
         return waitlist_details
 
     def get_waitlist_row_for_section(self, section_id):
         # Retrieve waitlist details for all sections
-        waitlist_details = []
+        waitlist_details: list[WaitlistModel] = []
         for key in self.redis_conn.scan_iter():
             user_data = self.redis_conn.hgetall(key)
             extracted_data = self.extract_user_data(user_data)
 
-            if extracted_data["section_id"] == section_id:
+            if extracted_data.section_id == section_id:
                 waitlist_details.append(extracted_data)
 
         return waitlist_details
 
     def get_waitlist_rows_for_user(self, user_id):
         # Retrieve waitlist details for all sections
-        waitlist_details = []
+        waitlist_details: list[WaitlistModel] = []
         for key in self.redis_conn.keys(f"user:{user_id}:*"):
             user_data = self.redis_conn.hgetall(key)
             extracted_data = self.extract_user_data(user_data)

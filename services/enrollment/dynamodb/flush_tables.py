@@ -1,4 +1,9 @@
 import boto3
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 
 # Initialize Boto3 DynamoDB resource with the appropriate endpoint URL for DynamoDB Local
 dynamodb = boto3.resource(

@@ -22,8 +22,8 @@ from fastapi import FastAPI, Depends, HTTPException
 
 from . import database
 from .database import get_db, get_read_db, get_user_roles
+from .dynamo_database import DynamoDB, get_dynamodb, insert_user
 from services.models import *
-from .dynamo_database import *
 
 
 app = FastAPI()
@@ -82,8 +82,6 @@ def register(
 ):
     passhash = password.hash(req.password)
 
-    user_id = insert_user(dynamodb, dict(req))
-
     user_row = fetch_row(
         db,
         """
@@ -107,27 +105,10 @@ def register(
             (id, role),
         )
 
+    user = get_user(id, db)
+    insert_user(dynamodb, user)
+
     return RegisterResponse(id=id)
-
-
-class User(BaseModel):
-    id: int
-    username: str
-    roles: list[Role]
-    first_name: str
-    last_name: str
-
-
-@app.get("/check/{user_id}")
-def get_user(user_id: int, db: sqlite3.Connection = Depends(get_read_db)):
-    # Fetch and return the user data for the inserted row
-    user_row = fetch_row(
-        db,
-        "SELECT id, username, first_name, last_name, passhash FROM users WHERE id = ?",
-        (user_id,),
-    )
-
-    return {"test": user_row}
 
 
 @app.get("/users/{id}")
