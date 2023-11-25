@@ -81,6 +81,15 @@ def list_courses(db: DynamoDB = Depends(get_dynamodb)) -> ListCoursesResponse:
     courses = get_courses_with_departments(db)
     return ListCoursesResponse(courses=courses)
 
+@app.post("/courses")
+def add_course(
+    req: AddCourseRequest,
+    db: DynamoDB = Depends(get_dynamodb),
+) -> Course:
+    create_course(db, req.dict())
+    courses = get_courses_with_departments(db, req.id)
+    return courses[0]
+
 
 @app.get("/courses/{course_id}")
 def get_course(course_id: int, db: DynamoDB = Depends(get_dynamodb)) -> Course:
@@ -107,6 +116,14 @@ def list_sections(
     sections = get_sections(db)
     return ListSectionsResponse(sections=sections)
 
+@app.post("/sections")
+def add_section(
+    req: AddSectionRequest,
+    db: DynamoDB = Depends(get_dynamodb),
+) -> Section:
+    create_section(db, req.dict())
+    sections = get_sections(db, req.id)
+    return sections[0]
 
 @app.get("/sections/{section_id}")
 def get_section(
@@ -118,6 +135,52 @@ def get_section(
         raise HTTPException(status_code=404, detail="Section not found")
     return sections[0]
 
+@app.delete("/sections/{section_id}")
+def delete_section(
+    section_id: int,
+    waitlist: WaitlistManager = Depends(get_waitlist_manager),
+    db: DynamoDB = Depends(get_dynamodb),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
+):
+    if Role.REGISTRAR not in jwt_roles:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    section_exists = check_section_exists(db, section_id)
+    if not section_exists:
+        raise HTTPException(
+            status_code=400,
+            detail="Section does not exist.",
+        )
+
+    # check validity of section_id
+    section = get_section(section_id, db)
+    course_id = section.course.id
+
+    section = mark_section_as_deleted(db, course_id, section_id)
+
+    all_enrollments = get_section_enrollments(db, section_id, None)
+    for enrollment in all_enrollments:
+        user_id = enrollment.user.id
+        delete_enrollment(db, user_id, section_id)
+
+    # drop waitlisted users
+    waitlist.remove_all_in_section(section_id)
+    return {"detail": "section successfully deleted."}
+
+@app.patch("/sections/{section_id}")
+def update_section(
+    section_id: int,
+    section: UpdateSectionRequest,
+    db: DynamoDB = Depends(get_dynamodb),
+    jwt_user: int = Depends(require_x_user),
+    jwt_roles: list[Role] = Depends(require_x_roles),
+):
+    if Role.REGISTRAR not in jwt_roles:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    update_section_by_id(db, section.course_id, section_id, section)
+    sections = get_sections(db, section_id)
+    return sections[0]
 
 @app.get("/sections/{section_id}/enrollments")
 def list_section_enrollments(
@@ -126,6 +189,7 @@ def list_section_enrollments(
     db: DynamoDB = Depends(get_dynamodb),
 ):
     enrollments = get_section_enrollments(db, section_id, status)
+    print(enrollments)
     return ListSectionEnrollmentsResponse(enrollments=enrollments)
 
 
@@ -238,40 +302,6 @@ def create_enrollment(
                 detail="Section is full and waitlist is full.",
             )
 
-
-@app.post("/courses")
-def add_course(
-    req: AddCourseRequest,
-    db: DynamoDB = Depends(get_dynamodb),
-) -> Course:
-    create_course(db, req.dict())
-    courses = get_courses_with_departments(db, req.id)
-    return courses[0]
-
-
-@app.post("/sections")
-def add_section(
-    req: AddSectionRequest,
-    db: DynamoDB = Depends(get_dynamodb),
-) -> Section:
-    create_section(db, req.dict())
-    sections = get_sections(db, req.id)
-    return sections[0]
-
-
-@app.patch("/sections/{section_id}")
-def update_section(
-    section_id: int,
-    section: UpdateSectionRequest,
-    db: DynamoDB = Depends(get_dynamodb),
-    jwt_user: int = Depends(require_x_user),
-    jwt_roles: list[Role] = Depends(require_x_roles),
-) -> Section:
-    if Role.REGISTRAR not in jwt_roles:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    update_section_by_id(db, section.course_id, section_id, section)
-    sections = get_sections(db, section_id)
-    return sections[0]
 
 
 @app.delete("/users/{user_id}/enrollments/{section_id}")
@@ -390,40 +420,6 @@ def drop_section_enrollment(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     return drop_user_enrollment(user_id, section_id, db)
-
-
-@app.delete("/sections/{section_id}")
-def delete_section(
-    section_id: int,
-    db: DynamoDB = Depends(get_dynamodb),
-    waitlist: WaitlistManager = Depends(get_waitlist_manager),
-    jwt_user: int = Depends(require_x_user),
-    jwt_roles: list[Role] = Depends(require_x_roles),
-):
-    if Role.REGISTRAR not in jwt_roles:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    section_exists = check_section_exists(db, section_id)
-    if not section_exists:
-        raise HTTPException(
-            status_code=400,
-            detail="Section does not exist.",
-        )
-
-    # check validity of section_id
-    section = get_section(section_id, db)
-    course_id = section.course.id
-
-    section = mark_section_as_deleted(db, course_id, section_id)
-
-    all_enrollments = get_section_enrollments(db, section_id, None)
-    for enrollment in all_enrollments:
-        user_id = enrollment.user.id
-        delete_enrollment(db, user_id, section_id)
-
-    # drop waitlisted users
-    waitlist.remove_all_in_section(section_id)
-    return {"detail": "section successfully deleted."}
 
 
 # https://fastapi.tiangolo.com/advanced/path-operation-advanced-configuration/#using-the-path-operation-function-name-as-the-operationid

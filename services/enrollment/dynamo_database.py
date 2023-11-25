@@ -1,4 +1,4 @@
-from typing import Any, Generator
+from typing import Any, Generator, Optional
 import boto3
 import mypy_boto3_dynamodb
 from fastapi import Depends
@@ -201,16 +201,22 @@ def list_waitlist(db: DynamoDB, redisWaitlist: list[WaitlistModel]) -> list[Wait
 def get_section_enrollments(
     db: DynamoDB,
     section_id: int,
-    status: EnrollmentStatus | None,
+    status: Optional[EnrollmentStatus] = None,
 ) -> list[ListSectionEnrollmentsItem]:
     enrollments_table = db.Table("Enrollment")
-    user_table = db.Table("User")
 
-    response_enrollments = enrollments_table.scan(
-        FilterExpression=f"section_id = :section_id {' and #status = :enrolled' if status else ''}",
-        ExpressionAttributeValues={":section_id": int(section_id), ":enrolled": status},
-        ExpressionAttributeNames={"#status": "status"},
-    )
+    filter_expression = f"section_id = :section_id {' and #status = :enrolled' if status else ''}"
+    expression_attribute_values = {":section_id": int(section_id), ":enrolled": status} if status else {":section_id": int(section_id)}
+
+    scan_params = {
+        "FilterExpression": filter_expression,
+        "ExpressionAttributeValues": expression_attribute_values,
+    }
+
+    if status:
+        scan_params["ExpressionAttributeNames"] = {"#status": "status"}
+
+    response_enrollments = enrollments_table.scan(**scan_params)
 
     sections = get_sections(db, section_id)
     assert len(sections) == 1
@@ -229,7 +235,6 @@ def get_section_enrollments(
         enrollments.append(enrollment)
 
     return enrollments
-
 
 def get_user_enrollments(
     db: DynamoDB,
@@ -431,6 +436,7 @@ def update_section_by_id(
     update_expression = "SET "
     expression_attribute_values = {}
 
+    updated_values = dict(updated_values)
     updated_values.pop("course_id", None)
 
     for key, value in updated_values.items():
